@@ -1,0 +1,479 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [closed]
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+  PREVIEW_NAMESPACE: vibecode-preview
+
+jobs:
+  build-preview:
+    name: Build Preview Images
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    strategy:
+      matrix:
+        app: [web, api]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate preview tag
+        id: preview-tag
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHORT_SHA=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
+          PREVIEW_TAG="pr-${PR_NUMBER}-${SHORT_SHA}"
+          echo "tag=$PREVIEW_TAG" >> $GITHUB_OUTPUT
+          echo "Preview tag: $PREVIEW_TAG"
+
+      - name: Extract metadata for ${{ matrix.app }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}
+          tags: |
+            type=raw,value=${{ steps.preview-tag.outputs.tag }}
+            type=raw,value=pr-${{ github.event.pull_request.number }}
+
+      - name: Build and push ${{ matrix.app }} preview image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=preview
+            BUILD_ID=${{ github.event.pull_request.head.sha }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+
+  deploy-preview:
+    name: Deploy Preview Environment
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    needs: build-preview
+    permissions:
+      contents: read
+      pull-requests: write
+
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.preview-url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.PREVIEW_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Generate preview namespace name
+        id: namespace
+        run: |
+          NS_NAME="preview-pr-${{ github.event.pull_request.number }}"
+          echo "name=$NS_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create preview namespace
+        run: |
+          kubectl create namespace ${{ steps.namespace.outputs.name }} --dry-run=client -o yaml | kubectl apply -f -
+
+          # Add labels for cleanup
+          kubectl label namespace ${{ steps.namespace.outputs.name }} \
+            vibecode.app/preview=true \
+            vibecode.app/pr-number="${{ github.event.pull_request.number }}" \
+            --overwrite
+
+      - name: Generate preview tag
+        id: preview-tag
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHORT_SHA=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
+          echo "tag=pr-${PR_NUMBER}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Deploy preview environment
+        id: deploy
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          NAMESPACE=${{ steps.namespace.outputs.name }}
+          IMAGE_TAG=${{ steps.preview-tag.outputs.tag }}
+
+          # Create ConfigMap for preview environment
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: preview-config
+            namespace: ${NAMESPACE}
+          data:
+            NODE_ENV: "preview"
+            API_URL: "https://preview-${PR_NUMBER}-api.vibecode.app"
+            WEB_URL: "https://preview-${PR_NUMBER}.vibecode.app"
+          EOF
+
+          # Deploy PostgreSQL for preview
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: postgres
+            namespace: ${NAMESPACE}
+          spec:
+            ports:
+              - port: 5432
+            selector:
+              app: postgres
+          ---
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: postgres
+            namespace: ${NAMESPACE}
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: postgres
+            template:
+              metadata:
+                labels:
+                  app: postgres
+              spec:
+                containers:
+                  - name: postgres
+                    image: postgres:16-alpine
+                    ports:
+                      - containerPort: 5432
+                    env:
+                      - name: POSTGRES_USER
+                        value: vibecode
+                      - name: POSTGRES_PASSWORD
+                        value: preview_password
+                      - name: POSTGRES_DB
+                        value: vibecode_preview
+          EOF
+
+          # Deploy API
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: vibecode-api
+            namespace: ${NAMESPACE}
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: vibecode-api
+            template:
+              metadata:
+                labels:
+                  app: vibecode-api
+              spec:
+                containers:
+                  - name: api
+                    image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api:${IMAGE_TAG}
+                    ports:
+                      - containerPort: 3001
+                    env:
+                      - name: NODE_ENV
+                        value: preview
+                      - name: DATABASE_URL
+                        value: postgresql://vibecode:preview_password@postgres:5432/vibecode_preview
+                    resources:
+                      limits:
+                        memory: "256Mi"
+                        cpu: "250m"
+                      requests:
+                        memory: "128Mi"
+                        cpu: "100m"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: vibecode-api
+            namespace: ${NAMESPACE}
+          spec:
+            ports:
+              - port: 80
+                targetPort: 3001
+            selector:
+              app: vibecode-api
+          EOF
+
+          # Deploy Web
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: vibecode-web
+            namespace: ${NAMESPACE}
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: vibecode-web
+            template:
+              metadata:
+                labels:
+                  app: vibecode-web
+              spec:
+                containers:
+                  - name: web
+                    image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web:${IMAGE_TAG}
+                    ports:
+                      - containerPort: 3000
+                    env:
+                      - name: NODE_ENV
+                        value: preview
+                      - name: NEXT_PUBLIC_API_URL
+                        value: https://preview-${PR_NUMBER}-api.vibecode.app
+                    resources:
+                      limits:
+                        memory: "256Mi"
+                        cpu: "250m"
+                      requests:
+                        memory: "128Mi"
+                        cpu: "100m"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: vibecode-web
+            namespace: ${NAMESPACE}
+          spec:
+            ports:
+              - port: 80
+                targetPort: 3000
+            selector:
+              app: vibecode-web
+          EOF
+
+          # Create Ingress
+          cat <<EOF | kubectl apply -f -
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: preview-ingress
+            namespace: ${NAMESPACE}
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+          spec:
+            tls:
+              - hosts:
+                  - preview-${PR_NUMBER}.vibecode.app
+                  - preview-${PR_NUMBER}-api.vibecode.app
+                secretName: preview-${PR_NUMBER}-tls
+            rules:
+              - host: preview-${PR_NUMBER}.vibecode.app
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: vibecode-web
+                          port:
+                            number: 80
+              - host: preview-${PR_NUMBER}-api.vibecode.app
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: vibecode-api
+                          port:
+                            number: 80
+          EOF
+
+          PREVIEW_URL="https://preview-${PR_NUMBER}.vibecode.app"
+          echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Wait for preview deployment
+        run: |
+          kubectl rollout status deployment/vibecode-web \
+            -n ${{ steps.namespace.outputs.name }} \
+            --timeout=300s
+
+          kubectl rollout status deployment/vibecode-api \
+            -n ${{ steps.namespace.outputs.name }} \
+            --timeout=300s
+
+      - name: Comment on PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = '${{ steps.deploy.outputs.preview-url }}';
+            const apiUrl = `https://preview-${prNumber}-api.vibecode.app`;
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+
+            const body = `## :rocket: Preview Deployment Ready!
+
+            | Resource | URL |
+            |----------|-----|
+            | **Web App** | [${previewUrl}](${previewUrl}) |
+            | **API** | [${apiUrl}](${apiUrl}) |
+
+            **Commit:** \`${sha}\`
+            **Namespace:** \`preview-pr-${prNumber}\`
+
+            ---
+            <sub>This preview environment will be automatically cleaned up when the PR is closed.</sub>`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Preview Deployment Ready')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
+
+  cleanup-preview:
+    name: Cleanup Preview Environment
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.PREVIEW_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Delete preview namespace
+        run: |
+          NAMESPACE="preview-pr-${{ github.event.pull_request.number }}"
+
+          if kubectl get namespace $NAMESPACE &> /dev/null; then
+            echo "Deleting namespace: $NAMESPACE"
+            kubectl delete namespace $NAMESPACE --wait=false
+            echo "Namespace deletion initiated"
+          else
+            echo "Namespace $NAMESPACE does not exist, skipping cleanup"
+          fi
+
+      - name: Comment on PR about cleanup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+
+            const body = `## :broom: Preview Environment Cleaned Up
+
+            The preview environment for this PR has been deleted.
+
+            **Namespace:** \`preview-pr-${prNumber}\` (deleted)
+
+            ---
+            <sub>Preview environments are automatically cleaned up when PRs are closed.</sub>`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
+
+  # Scheduled cleanup for orphaned preview environments
+  scheduled-cleanup:
+    name: Scheduled Preview Cleanup
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.PREVIEW_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Cleanup old preview namespaces
+        run: |
+          # Get all preview namespaces older than 7 days
+          NAMESPACES=$(kubectl get namespaces -l vibecode.app/preview=true -o jsonpath='{.items[*].metadata.name}')
+
+          for ns in $NAMESPACES; do
+            # Get creation timestamp
+            CREATED=$(kubectl get namespace $ns -o jsonpath='{.metadata.creationTimestamp}')
+            CREATED_EPOCH=$(date -d "$CREATED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$CREATED" +%s)
+            NOW_EPOCH=$(date +%s)
+            AGE_DAYS=$(( (NOW_EPOCH - CREATED_EPOCH) / 86400 ))
+
+            if [ $AGE_DAYS -gt 7 ]; then
+              echo "Deleting old preview namespace: $ns (${AGE_DAYS} days old)"
+              kubectl delete namespace $ns --wait=false
+            fi
+          done

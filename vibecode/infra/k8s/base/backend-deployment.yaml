@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-backend
+  namespace: vibecode
+  labels:
+    app.kubernetes.io/name: vibecode-backend
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: vibecode-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vibecode-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vibecode-backend
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: vibecode-platform
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/vibecode/api:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          env:
+            - name: PORT
+              value: "3000"
+            - name: API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: vibecode-config
+                  key: API_URL
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: vibecode-config
+                  key: FRONTEND_URL
+            - name: S3_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: vibecode-config
+                  key: S3_REGION
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: vibecode-config
+                  key: NODE_ENV
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: database-url
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: github-client-id
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: github-client-secret
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: jwt-secret
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: aws-secret-access-key
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: s3-bucket
+            - name: CDN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: vibecode-secrets
+                  key: cdn-url
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

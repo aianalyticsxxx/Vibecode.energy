@@ -1,0 +1,57 @@
+{
+  "name": "vibecode-energy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VibeCode Energy - A social network for vibecoders around the world",
+  "keywords": [
+    "social-network",
+    "vibecoding",
+    "energy",
+    "typescript",
+    "monorepo"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibecode/vibecode-energy.git"
+  },
+  "license": "MIT",
+  "author": "VibeCode Energy Team",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @vibecode/api migrate",
+    "db:seed": "pnpm --filter @vibecode/api seed",
+    "db:reset": "pnpm --filter @vibecode/api db:reset",
+    "dev": "turbo dev",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
+    "prepare": "husky install",
+    "test": "turbo test",
+    "test:coverage": "turbo test -- --coverage",
+    "test:watch": "turbo test -- --watch",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  }
+}

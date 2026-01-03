@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vibecode-config
+  namespace: vibecode
+  labels:
+    app.kubernetes.io/name: vibecode
+    app.kubernetes.io/part-of: vibecode-platform
+data:
+  API_URL: "https://api.vibecode.app"
+  FRONTEND_URL: "https://vibecode.app"
+  S3_REGION: "us-east-1"
+  NODE_ENV: "production"

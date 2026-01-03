@@ -1,0 +1,98 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: vibecode-staging
+
+namespace: vibecode-staging
+
+resources:
+  - ../../base
+
+nameSuffix: ""
+
+labels:
+  - includeSelectors: false
+    pairs:
+      environment: staging
+
+images:
+  - name: ghcr.io/vibecode/api
+    newTag: staging
+  - name: ghcr.io/vibecode/web
+    newTag: staging
+
+patches:
+  # Override namespace for all resources
+  - target:
+      kind: Namespace
+      name: vibecode
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: vibecode-staging
+
+  # Scale down backend replicas for staging
+  - target:
+      kind: Deployment
+      name: vibecode-backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+  # Scale down frontend replicas for staging
+  - target:
+      kind: Deployment
+      name: vibecode-frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+  # Update HPA min replicas for staging
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: vibecode-backend-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 5
+
+  # Update ConfigMap for staging URLs
+  - target:
+      kind: ConfigMap
+      name: vibecode-config
+    patch: |-
+      - op: replace
+        path: /data/API_URL
+        value: "https://api.staging.vibecode.app"
+      - op: replace
+        path: /data/FRONTEND_URL
+        value: "https://staging.vibecode.app"
+      - op: replace
+        path: /data/NODE_ENV
+        value: "staging"
+
+  # Update Ingress hosts for staging
+  - target:
+      kind: Ingress
+      name: vibecode-ingress
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - staging.vibecode.app
+          - api.staging.vibecode.app
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: vibecode-staging-tls
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.vibecode.app
+      - op: replace
+        path: /spec/rules/1/host
+        value: api.staging.vibecode.app

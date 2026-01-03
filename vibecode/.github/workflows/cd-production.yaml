@@ -1,0 +1,298 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Production Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        app: [web, api]
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Extract version from release tag (e.g., v1.2.3 -> 1.2.3)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for ${{ matrix.app }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.app }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push ${{ matrix.app }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILD_ID=${{ github.sha }}
+            VERSION=${{ steps.version.outputs.version }}
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: production
+      url: https://vibecode.app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Create deployment backup
+        run: |
+          # Backup current deployment state for potential rollback
+          kubectl get deployment vibecode-web -n vibecode-production -o yaml > web-backup.yaml || true
+          kubectl get deployment vibecode-api -n vibecode-production -o yaml > api-backup.yaml || true
+
+      - name: Update web deployment image
+        run: |
+          kubectl set image deployment/vibecode-web \
+            web=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web:${{ needs.build-and-push.outputs.version }} \
+            -n vibecode-production
+
+      - name: Update API deployment image
+        run: |
+          kubectl set image deployment/vibecode-api \
+            api=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api:${{ needs.build-and-push.outputs.version }} \
+            -n vibecode-production
+
+      - name: Wait for web rollout
+        id: web-rollout
+        run: |
+          kubectl rollout status deployment/vibecode-web \
+            -n vibecode-production \
+            --timeout=600s
+
+      - name: Wait for API rollout
+        id: api-rollout
+        run: |
+          kubectl rollout status deployment/vibecode-api \
+            -n vibecode-production \
+            --timeout=600s
+
+      - name: Verify deployment health
+        id: health-check
+        run: |
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod \
+            -l app=vibecode-web \
+            -n vibecode-production \
+            --timeout=180s
+
+          kubectl wait --for=condition=ready pod \
+            -l app=vibecode-api \
+            -n vibecode-production \
+            --timeout=180s
+
+      - name: Run production smoke tests
+        id: smoke-tests
+        run: |
+          # Comprehensive health checks
+          API_URL="https://api.vibecode.app/health"
+          WEB_URL="https://vibecode.app"
+
+          echo "Checking API health..."
+          API_RESPONSE=$(curl -sf "$API_URL")
+          echo "API Response: $API_RESPONSE"
+
+          echo "Checking Web health..."
+          WEB_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$WEB_URL")
+          echo "Web Status: $WEB_STATUS"
+
+          if [ "$WEB_STATUS" != "200" ]; then
+            echo "Web health check failed!"
+            exit 1
+          fi
+
+          echo "All production smoke tests passed!"
+
+      - name: Rollback on failure
+        if: failure() && (steps.web-rollout.outcome == 'failure' || steps.api-rollout.outcome == 'failure' || steps.health-check.outcome == 'failure' || steps.smoke-tests.outcome == 'failure')
+        run: |
+          echo "Deployment failed! Initiating rollback..."
+
+          kubectl rollout undo deployment/vibecode-web -n vibecode-production || true
+          kubectl rollout undo deployment/vibecode-api -n vibecode-production || true
+
+          echo "Rollback initiated. Waiting for rollback to complete..."
+          kubectl rollout status deployment/vibecode-web -n vibecode-production --timeout=300s || true
+          kubectl rollout status deployment/vibecode-api -n vibecode-production --timeout=300s || true
+
+      - name: Create deployment record
+        if: success()
+        run: |
+          echo "Recording successful deployment..."
+          echo "Version: ${{ needs.build-and-push.outputs.version }}"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: Post success notification
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "Production Deployment Successful!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":rocket: Production Deployment Successful!"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ needs.build-and-push.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Release:*\n<${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Deployed by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Environment:*\nProduction"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*URL:* https://vibecode.app"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Post failure notification
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "Production Deployment Failed!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":x: Production Deployment Failed!"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ needs.build-and-push.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Release:*\n<${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Attempted by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\nRollback initiated"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Action Required:* Please investigate the deployment failure and check the workflow logs."
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

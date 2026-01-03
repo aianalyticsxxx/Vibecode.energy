@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: vibecode-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vibecode
+      POSTGRES_PASSWORD: vibecode
+      POSTGRES_DB: vibecode
+    ports:
+      - "5433:5432"
+    volumes:
+      - vibecode-postgres-data:/var/lib/postgresql/data
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: vibecode-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vibecode
+      MINIO_ROOT_PASSWORD: vibecode123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - vibecode-minio-data:/data
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  vibecode-postgres-data:
+  vibecode-minio-data:
+
+networks:
+  vibecode-network:
+    driver: bridge

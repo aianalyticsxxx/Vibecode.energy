@@ -1,0 +1,96 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: vibecode-production
+
+namespace: vibecode
+
+resources:
+  - ../../base
+
+labels:
+  - includeSelectors: false
+    pairs:
+      environment: production
+
+images:
+  - name: ghcr.io/vibecode/api
+    newTag: latest
+  - name: ghcr.io/vibecode/web
+    newTag: latest
+
+patches:
+  # Ensure production backend has adequate replicas
+  - target:
+      kind: Deployment
+      name: vibecode-backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  # Ensure production frontend has adequate replicas
+  - target:
+      kind: Deployment
+      name: vibecode-frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  # Production HPA settings
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: vibecode-backend-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 10
+
+  # Production resource limits - higher for production workloads
+  - target:
+      kind: Deployment
+      name: vibecode-backend
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+
+  - target:
+      kind: Deployment
+      name: vibecode-frontend
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+
+  # Ensure production ConfigMap has correct values
+  - target:
+      kind: ConfigMap
+      name: vibecode-config
+    patch: |-
+      - op: replace
+        path: /data/NODE_ENV
+        value: "production"

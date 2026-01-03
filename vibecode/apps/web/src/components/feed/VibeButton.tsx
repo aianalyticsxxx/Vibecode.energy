@@ -1,0 +1,132 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
+
+export interface VibeButtonProps {
+  vibeId: string;
+  sparkleCount: number;
+  hasSparkled: boolean;
+  className?: string;
+}
+
+export function VibeButton({
+  vibeId,
+  sparkleCount: initialCount,
+  hasSparkled: initialSparkled,
+  className,
+}: VibeButtonProps) {
+  const [sparkleCount, setSparkleCount] = useState(initialCount);
+  const [hasSparkled, setHasSparkled] = useState(initialSparkled);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [particles, setParticles] = useState<number[]>([]);
+
+  const handleSparkle = useCallback(async () => {
+    // Optimistic update
+    const wasSparkled = hasSparkled;
+    setHasSparkled(!wasSparkled);
+    setSparkleCount((prev) => prev + (wasSparkled ? -1 : 1));
+
+    // Trigger animation only when adding sparkle
+    if (!wasSparkled) {
+      setIsAnimating(true);
+      // Add particles
+      setParticles(Array.from({ length: 8 }, (_, i) => i));
+      setTimeout(() => {
+        setIsAnimating(false);
+        setParticles([]);
+      }, 700);
+    }
+
+    // API call
+    try {
+      if (wasSparkled) {
+        await api.unsparkleVibe(vibeId);
+      } else {
+        await api.sparkleVibe(vibeId);
+      }
+    } catch (error) {
+      // Revert on error
+      setHasSparkled(wasSparkled);
+      setSparkleCount((prev) => prev + (wasSparkled ? 1 : -1));
+      console.error('Failed to sparkle:', error);
+    }
+  }, [vibeId, hasSparkled]);
+
+  return (
+    <button
+      onClick={handleSparkle}
+      className={cn(
+        'relative flex items-center gap-2 py-2 px-3 rounded-full',
+        'transition-all duration-200',
+        hasSparkled
+          ? 'bg-vibe-purple/20 text-vibe-purple'
+          : 'text-white/60 hover:text-white hover:bg-white/10',
+        className
+      )}
+    >
+      {/* Sparkle icon */}
+      <motion.div
+        className="relative"
+        animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
+        <motion.span
+          className="text-xl"
+          animate={isAnimating ? { rotate: [0, 20, -20, 0] } : {}}
+          transition={{ duration: 0.4 }}
+        >
+          {hasSparkled ? '✨' : '✨'}
+        </motion.span>
+
+        {/* Particle explosion */}
+        <AnimatePresence>
+          {particles.map((i) => (
+            <motion.div
+              key={i}
+              className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-vibe-purple"
+              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+              animate={{
+                x: Math.cos((i * Math.PI) / 4) * 30,
+                y: Math.sin((i * Math.PI) / 4) * 30,
+                opacity: 0,
+                scale: 0,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          ))}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Count */}
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={sparkleCount}
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 10, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-sm font-medium tabular-nums"
+        >
+          {sparkleCount > 0 ? sparkleCount : ''}
+        </motion.span>
+      </AnimatePresence>
+
+      {/* Ripple effect */}
+      <AnimatePresence>
+        {isAnimating && (
+          <motion.div
+            className="absolute inset-0 rounded-full bg-vibe-purple/30"
+            initial={{ scale: 0.5, opacity: 1 }}
+            animate={{ scale: 2, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          />
+        )}
+      </AnimatePresence>
+    </button>
+  );
+}
