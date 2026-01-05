@@ -89,6 +89,12 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
+export interface VibesFeedResponse {
+  vibes: Vibe[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 /**
  * Base fetch wrapper with auth
  */
@@ -247,7 +253,7 @@ export const api = {
 
   // Vibes
   getFeed: (cursor?: string) =>
-    get<PaginatedResponse<Vibe>>(`/vibes${cursor ? `?cursor=${cursor}` : ''}`),
+    get<VibesFeedResponse>(`/vibes${cursor ? `?cursor=${cursor}` : ''}`),
 
   getVibe: (id: string) => get<Vibe>(`/vibes/${id}`),
 
@@ -258,7 +264,7 @@ export const api = {
 
   // Discovery feed
   getDiscoveryFeed: (cursor?: string, sort: 'recent' | 'popular' = 'recent') =>
-    get<PaginatedResponse<Vibe>>(`/vibes/discovery?sort=${sort}${cursor ? `&cursor=${cursor}` : ''}`),
+    get<VibesFeedResponse>(`/vibes/discovery?sort=${sort}${cursor ? `&cursor=${cursor}` : ''}`),
 
   // Sparkles
   sparkleVibe: (vibeId: string) => post<{ sparkleCount: number }>(`/vibes/${vibeId}/vibe`),

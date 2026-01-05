@@ -1,7 +1,7 @@
 'use client';
 
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { api, Vibe, PaginatedResponse } from '@/lib/api';
+import { api, Vibe, VibesFeedResponse } from '@/lib/api';
 import { useCallback } from 'react';
 
 export interface UseVibesReturn {
@@ -35,7 +35,7 @@ export function useVibes(): UseVibesReturn {
         throw new Error(error.message);
       }
 
-      return data as PaginatedResponse<Vibe>;
+      return data as VibesFeedResponse;
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
@@ -47,7 +47,7 @@ export function useVibes(): UseVibesReturn {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const vibes = data?.pages.flatMap((page) => page?.items || []) || [];
+  const vibes = data?.pages.flatMap((page) => page?.vibes || []) || [];
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -67,7 +67,7 @@ export function useVibes(): UseVibesReturn {
             if (index === 0) {
               return {
                 ...page,
-                items: [vibe, ...(page?.items || [])],
+                vibes: [vibe, ...(page?.vibes || [])],
               };
             }
             return page;

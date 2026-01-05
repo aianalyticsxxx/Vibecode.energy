@@ -25,14 +25,14 @@ interface Vibe {
   caption?: string;
   vibeDate: string;
   createdAt: Date;
-  author: {
+  user: {
     id: string;
     username: string;
     displayName: string;
     avatarUrl?: string;
   };
-  reactionCount: number;
-  hasReacted: boolean;
+  sparkleCount: number;
+  hasSparkled: boolean;
   isLate: boolean;
   lateByMinutes: number;
 }
@@ -341,14 +341,16 @@ export class VibeService {
       caption: row.caption as string | undefined,
       vibeDate: row.vibe_date as string,
       createdAt: new Date(row.created_at as string),
-      author: {
+      // Use 'user' to match frontend expectations
+      user: {
         id: row.author_id as string,
         username: row.username as string,
         displayName: row.display_name as string,
         avatarUrl: row.avatar_url as string | undefined,
       },
-      reactionCount: parseInt(row.reaction_count as string, 10) || 0,
-      hasReacted: row.has_reacted as boolean,
+      // Use sparkleCount/hasSparkled to match frontend
+      sparkleCount: parseInt(row.reaction_count as string, 10) || 0,
+      hasSparkled: row.has_reacted as boolean,
       isLate: row.is_late as boolean || false,
       lateByMinutes: (row.late_by_minutes as number) || 0,
     };

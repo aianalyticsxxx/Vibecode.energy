@@ -37,7 +37,7 @@ export function useDiscoveryFeed(sort: SortOption = 'recent'): UseDiscoveryFeedR
     getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
   });
 
-  const vibes = data?.pages.flatMap((page) => page?.items ?? []) ?? [];
+  const vibes = data?.pages.flatMap((page) => page?.vibes ?? []) ?? [];
 
   return {
     vibes,
