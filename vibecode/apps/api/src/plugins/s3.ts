@@ -27,6 +27,8 @@ const s3PluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     bucket: process.env.S3_BUCKET,
     region,
     endpoint: endpoint || 'AWS S3',
+    publicUrl: process.env.S3_PUBLIC_URL || process.env.CDN_URL || 'none',
+    accessKeyIdPrefix: accessKeyId ? accessKeyId.substring(0, 8) + '...' : 'missing',
   }, 'Initializing S3 client');
 
   const s3Client = new S3Client({
