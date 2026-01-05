@@ -21,7 +21,7 @@ export function ThemedBackground({ className, children }: ThemedBackgroundProps)
   }
 
   return (
-    <GradientBackground className={className} animated>
+    <GradientBackground className={className}>
       {children}
     </GradientBackground>
   );
