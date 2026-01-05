@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // output: 'standalone', // Only needed for Docker, not for Vercel
   images: {
     remotePatterns: [
       {
