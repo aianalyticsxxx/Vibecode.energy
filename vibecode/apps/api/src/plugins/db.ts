@@ -24,7 +24,7 @@ const dbPluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     fastify.log.info('Database connection established');
     client.release();
   } catch (err) {
-    fastify.log.error('Database connection failed:', err);
+    fastify.log.error({ err }, 'Database connection failed');
     throw err;
   }
 

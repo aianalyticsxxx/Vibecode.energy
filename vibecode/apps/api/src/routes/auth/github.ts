@@ -89,7 +89,7 @@ export const githubRoutes: FastifyPluginAsync = async (fastify) => {
       };
 
       if (tokenData.error || !tokenData.access_token) {
-        fastify.log.error('GitHub token exchange failed:', tokenData);
+        fastify.log.error({ tokenData }, 'GitHub token exchange failed');
         return reply.status(400).send({ error: tokenData.error_description || 'Failed to exchange code' });
       }
 
