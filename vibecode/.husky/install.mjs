@@ -3,5 +3,9 @@ if (process.env.NODE_ENV === 'production' || process.env.CI === 'true' || proces
   process.exit(0)
 }
 
-const husky = (await import('husky')).default
-console.log(husky())
+try {
+  const { execSync } = await import('child_process')
+  execSync('npx husky install', { stdio: 'inherit' })
+} catch (e) {
+  console.log('Husky install skipped')
+}
