@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { api, Vibe } from '@/lib/api';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { CaptureGate } from '@/components/capture/CaptureGate';
 import { StreakDisplay } from '@/components/profile/StreakDisplay';
 import { LateBadge } from '@/components/feed/LateBadge';
+import { EditProfileModal } from '@/components/profile/EditProfileModal';
 import type { User } from '@/lib/auth';
 
 interface ProfileData {
@@ -24,6 +26,8 @@ export default function ProfilePage() {
   const params = useParams();
   const username = params.username as string;
   const { user: currentUser, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['profile', username],
@@ -142,7 +146,10 @@ export default function ProfilePage() {
 
             {/* Actions */}
             {isOwnProfile && (
-              <div className="mt-4">
+              <div className="mt-4 flex justify-center gap-3">
+                <Button variant="gradient" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                  Edit Profile
+                </Button>
                 <Button variant="glass" size="sm" onClick={logout}>
                   Sign Out
                 </Button>
@@ -218,6 +225,22 @@ export default function ProfilePage() {
             year: 'numeric',
           })}
         </motion.p>
+
+        {/* Edit Profile Modal */}
+        {isOwnProfile && (
+          <EditProfileModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            user={user}
+            onUpdate={(updatedUser) => {
+              // Update the cache with new user data
+              queryClient.setQueryData(['profile', username], (old: ProfileData | undefined) => {
+                if (!old) return old;
+                return { ...old, user: updatedUser };
+              });
+            }}
+          />
+        )}
       </div>
     </CaptureGate>
   );

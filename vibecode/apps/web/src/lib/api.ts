@@ -169,6 +169,16 @@ export function put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>
 }
 
 /**
+ * PATCH request
+ */
+export function patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+  return fetchApi<T>(endpoint, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
  * DELETE request
  */
 export function del<T>(endpoint: string): Promise<ApiResponse<T>> {
@@ -267,6 +277,9 @@ export const api = {
   // Users
   getUser: (username: string) =>
     get<{ user: import('./auth').User; vibes: Vibe[] }>(`/users/${username}`),
+
+  updateProfile: (data: { displayName?: string; bio?: string }) =>
+    patch<{ user: import('./auth').User }>('/users/me', data),
 
   // Streaks
   getUserStreak: (username: string) => get<UserStreak>(`/users/${username}/streak`),
