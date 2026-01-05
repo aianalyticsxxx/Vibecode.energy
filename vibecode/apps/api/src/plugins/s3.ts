@@ -16,12 +16,22 @@ declare module 'fastify' {
 const s3PluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   const region = process.env.S3_REGION || 'us-east-1';
 
+  // Support both AWS_* and S3_* naming conventions for credentials
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_KEY;
+
+  fastify.log.info({
+    hasCredentials: !!(accessKeyId && secretAccessKey),
+    bucket: process.env.S3_BUCKET,
+    region,
+  }, 'Initializing S3 client');
+
   const s3Client = new S3Client({
     region,
-    credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+    credentials: accessKeyId && secretAccessKey
       ? {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          accessKeyId,
+          secretAccessKey,
         }
       : undefined, // Use default credentials chain if not provided
   });
