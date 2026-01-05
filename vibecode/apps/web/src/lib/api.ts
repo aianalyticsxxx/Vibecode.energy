@@ -305,5 +305,5 @@ export const api = {
   generateVibecheck: () => post<{ id: string; triggerTime: string; windowEndTime: string }>('/vibecheck/generate'),
 
   // Daily vibe check
-  getDailyVibeStatus: () => get<{ hasPostedToday: boolean; todaysVibe: Vibe | null }>('/vibes/today'),
+  getDailyVibeStatus: () => get<{ hasPostedToday: boolean; vibe: Vibe | null }>('/vibes/today'),
 };

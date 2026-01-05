@@ -39,7 +39,7 @@ export function useDailyVibe(): UseDailyVibeReturn {
     (vibe: Vibe) => {
       queryClient.setQueryData(['daily-vibe-status'], {
         hasPostedToday: true,
-        todaysVibe: vibe,
+        vibe: vibe,
       });
     },
     [queryClient]
@@ -47,7 +47,7 @@ export function useDailyVibe(): UseDailyVibeReturn {
 
   return {
     hasPostedToday: data?.hasPostedToday || false,
-    todaysVibe: data?.todaysVibe || null,
+    todaysVibe: data?.vibe || null,
     isLoading,
     error: error instanceof Error ? error.message : null,
     refetch,
