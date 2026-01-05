@@ -20,18 +20,19 @@ interface UserVibesOptions {
 
 interface Vibe {
   id: string;
-  content: string;
-  mediaUrl?: string;
-  mediaType?: string;
+  imageUrl: string;
+  caption: string | null;
+  vibeDate: string;
   createdAt: Date;
-  updatedAt: Date;
-  reactionCount: number;
-  hasReacted: boolean;
+  sparkleCount: number;
+  hasSparkled: boolean;
+  isLate: boolean;
+  lateByMinutes: number;
 }
 
 interface UserVibesResult {
-  vibes: Vibe[];
-  nextCursor?: string;
+  items: Vibe[];
+  nextCursor: string | null;
   hasMore: boolean;
 }
 
@@ -88,61 +89,63 @@ export class UserService {
   async getUserVibes(options: UserVibesOptions): Promise<UserVibesResult> {
     const { userId, cursor, limit, currentUserId } = options;
 
-    let query = `
-      SELECT
-        v.id,
-        v.content,
-        v.media_url,
-        v.media_type,
-        v.created_at,
-        v.updated_at,
-        COUNT(r.id) as reaction_count
-        ${currentUserId ? ', EXISTS(SELECT 1 FROM reactions WHERE vibe_id = v.id AND user_id = $3) as has_reacted' : ', false as has_reacted'}
-      FROM vibes v
-      LEFT JOIN reactions r ON r.vibe_id = v.id
-      WHERE v.user_id = $1
-    `;
+    const params: (string | number)[] = [userId, limit + 1];
+    let paramIndex = 3;
 
-    const params: (string | number)[] = [userId];
-    let paramIndex = 2;
-
+    let cursorCondition = '';
     if (cursor) {
-      query += ` AND v.created_at < $${paramIndex}`;
+      cursorCondition = `AND v.created_at < $${paramIndex}`;
       params.push(cursor);
       paramIndex++;
     }
 
+    let hasSparkledSelect = 'false as has_sparkled';
     if (currentUserId) {
+      hasSparkledSelect = `EXISTS(SELECT 1 FROM reactions WHERE vibe_id = v.id AND user_id = $${paramIndex}) as has_sparkled`;
       params.push(currentUserId);
     }
 
-    query += `
+    const query = `
+      SELECT
+        v.id,
+        v.image_url,
+        v.caption,
+        v.vibe_date,
+        v.created_at,
+        v.is_late,
+        v.late_by_minutes,
+        COUNT(r.id) as sparkle_count,
+        ${hasSparkledSelect}
+      FROM vibes v
+      LEFT JOIN reactions r ON r.vibe_id = v.id
+      WHERE v.user_id = $1
+      ${cursorCondition}
       GROUP BY v.id
       ORDER BY v.created_at DESC
-      LIMIT $${paramIndex}
+      LIMIT $2
     `;
-    params.splice(currentUserId ? 2 : paramIndex - 1, 0, limit + 1);
 
     const result = await this.fastify.db.query(query, params);
 
     const hasMore = result.rows.length > limit;
-    const vibes = result.rows.slice(0, limit).map((row): Vibe => ({
+    const items = result.rows.slice(0, limit).map((row): Vibe => ({
       id: row.id,
-      content: row.content,
-      mediaUrl: row.media_url,
-      mediaType: row.media_type,
+      imageUrl: row.image_url,
+      caption: row.caption,
+      vibeDate: row.vibe_date,
       createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      reactionCount: parseInt(row.reaction_count, 10) || 0,
-      hasReacted: row.has_reacted,
+      sparkleCount: parseInt(row.sparkle_count, 10) || 0,
+      hasSparkled: row.has_sparkled || false,
+      isLate: row.is_late || false,
+      lateByMinutes: row.late_by_minutes || 0,
     }));
 
-    const nextCursor = hasMore && vibes.length > 0
-      ? vibes[vibes.length - 1].createdAt.toISOString()
-      : undefined;
+    const nextCursor = hasMore && items.length > 0
+      ? items[items.length - 1].createdAt.toISOString()
+      : null;
 
     return {
-      vibes,
+      items,
       nextCursor,
       hasMore,
     };

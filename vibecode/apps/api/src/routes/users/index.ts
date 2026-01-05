@@ -89,7 +89,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(404).send({ error: 'User not found' });
     }
 
-    return updatedUser;
+    return { user: updatedUser };
   });
 
   // GET /users/:username/streak - Get user's streak info
