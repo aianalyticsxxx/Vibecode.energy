@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { UserService } from '../../services/user.service.js';
+import { StreakService } from '../../services/streak.service.js';
 import { userSchemas } from '../../schemas/user.schemas.js';
 
 interface UsernameParams {
@@ -18,6 +19,7 @@ interface UpdateUserBody {
 
 export const userRoutes: FastifyPluginAsync = async (fastify) => {
   const userService = new UserService(fastify);
+  const streakService = new StreakService(fastify);
 
   // GET /users/:username - Get user profile
   fastify.get<{ Params: UsernameParams }>('/:username', {
@@ -88,5 +90,53 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return updatedUser;
+  });
+
+  // GET /users/:username/streak - Get user's streak info
+  fastify.get<{ Params: UsernameParams }>('/:username/streak', async (request, reply) => {
+    const { username } = request.params;
+
+    const streak = await streakService.getStreakByUsername(username);
+
+    if (!streak) {
+      return reply.status(404).send({ error: 'User not found' });
+    }
+
+    const milestone = streakService.getStreakMilestone(streak.currentStreak);
+    const nextMilestone = streakService.getNextMilestone(streak.currentStreak);
+
+    return {
+      currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak,
+      lastPostDate: streak.lastPostDate,
+      streakStartedAt: streak.streakStartedAt,
+      milestone: milestone ? {
+        days: milestone.days,
+        name: milestone.name,
+        emoji: milestone.emoji,
+      } : null,
+      nextMilestone: nextMilestone ? {
+        days: nextMilestone.days,
+        name: nextMilestone.name,
+        emoji: nextMilestone.emoji,
+        daysRemaining: nextMilestone.days - streak.currentStreak,
+      } : null,
+    };
+  });
+
+  // GET /streaks/leaderboard - Get top streaks
+  fastify.get('/streaks/leaderboard', async (request, _reply) => {
+    const leaderboard = await streakService.getLeaderboard(10);
+
+    return {
+      leaderboard: leaderboard.map((entry, index) => ({
+        rank: index + 1,
+        username: entry.username,
+        displayName: entry.displayName,
+        avatarUrl: entry.avatarUrl,
+        currentStreak: entry.currentStreak,
+        milestone: streakService.getStreakMilestone(entry.currentStreak),
+      })),
+    };
   });
 };

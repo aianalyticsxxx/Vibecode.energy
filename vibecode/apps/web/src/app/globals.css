@@ -4,21 +4,19 @@
 
 @layer base {
   :root {
-    --vibe-purple: #8B5CF6;
-    --vibe-blue: #3B82F6;
-    --vibe-teal: #14B8A6;
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    /* BeReal-style colors */
+    --bereal-black: #000000;
+    --bereal-dark: #0A0A0A;
+    --bereal-gray: #1A1A1A;
+    --bereal-gray-light: #2A2A2A;
+    --bereal-yellow: #FFFF00;
+    --bereal-white: #FFFFFF;
+    --bereal-white-muted: #B0B0B0;
 
-    /* Neumorphic variables */
-    --neu-base: #E0E5EC;
-    --neu-light: #FFFFFF;
-    --neu-dark: #A3B1C6;
-    --neu-text: #1a2a3a;
-    --neu-text-secondary: #4a5568;
-    --neu-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
-    --neu-shadow-sm: 4px 4px 8px var(--neu-dark), -4px -4px 8px var(--neu-light);
-    --neu-shadow-inset: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
+    /* Legacy mappings */
+    --vibe-purple: #FFFF00;
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 
   * {
@@ -30,64 +28,89 @@
   }
 
   body {
-    @apply antialiased min-h-screen bg-slate-900;
+    @apply antialiased min-h-screen;
+    background-color: #000000;
+    color: #FFFFFF;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, sans-serif;
-  }
-
-  /* Theme-specific body styles */
-  .theme-neumorphic body {
-    @apply bg-neumorphic-base text-neumorphic-text;
   }
 }
 
 @layer components {
+  /* BeReal-style glass panels */
   .glass {
-    @apply bg-glass-white backdrop-blur-glass border border-glass-border;
+    background-color: rgba(26, 26, 26, 0.8);
+    @apply backdrop-blur-glass border border-white/10;
   }
 
   .glass-heavy {
-    @apply bg-glass-white-lighter backdrop-blur-glass-heavy border border-glass-border;
+    background-color: #1A1A1A;
+    @apply backdrop-blur-glass-heavy border border-white/20;
   }
 
   .glass-panel {
-    @apply glass rounded-2xl shadow-glass;
+    @apply glass rounded-2xl;
   }
 
   .glass-card {
     @apply glass-panel p-4 md:p-6;
   }
 
+  /* BeReal-style gradient (yellow) */
   .gradient-bg {
-    @apply bg-gradient-vibe bg-[length:200%_200%] animate-gradient-shift;
+    background-color: #FFFF00;
   }
 
   .gradient-text {
-    @apply bg-gradient-vibe bg-clip-text text-transparent;
+    color: #FFFF00;
   }
 
+  /* BeReal-style buttons */
   .btn-gradient {
-    @apply bg-gradient-vibe text-white font-semibold py-3 px-6 rounded-xl
-           shadow-glass transition-all duration-300 ease-out
-           hover:shadow-glow hover:scale-105 active:scale-95;
+    background-color: #FFFF00;
+    @apply text-black font-bold py-3 px-6 rounded-full
+           transition-all duration-200 ease-out
+           hover:scale-105 active:scale-95;
+  }
+
+  .btn-gradient:hover {
+    background-color: #E6E600;
   }
 
   .btn-glass {
-    @apply glass text-white font-semibold py-3 px-6 rounded-xl
-           shadow-glass-sm transition-all duration-300 ease-out
-           hover:bg-glass-white-lighter hover:shadow-glass active:scale-95;
+    background-color: #2A2A2A;
+    @apply text-white font-semibold py-3 px-6 rounded-full
+           border border-white/10
+           transition-all duration-200 ease-out
+           active:scale-95;
   }
 
+  .btn-glass:hover {
+    background-color: #3A3A3A;
+  }
+
+  .btn-outline {
+    @apply bg-transparent text-white font-semibold py-3 px-6 rounded-full
+           border-2 border-white
+           transition-all duration-200 ease-out
+           hover:bg-white hover:text-black active:scale-95;
+  }
+
+  /* BeReal-style inputs */
   .input-glass {
-    @apply glass rounded-xl px-4 py-3 text-white placeholder-white/50
-           outline-none transition-all duration-300
-           focus:ring-2 focus:ring-vibe-purple/50 focus:bg-glass-white-lighter;
+    background-color: #1A1A1A;
+    @apply rounded-xl px-4 py-3 text-white
+           placeholder-gray-500 border border-white/10
+           outline-none transition-all duration-200
+           focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400;
   }
 
+  /* Avatar styles */
   .avatar-glow {
-    @apply rounded-full ring-2 ring-vibe-purple/50 shadow-glow;
+    @apply rounded-full ring-2 ring-yellow-400 shadow-glow;
   }
 
+  /* Sparkle/reaction button */
   .sparkle-button {
     @apply relative overflow-hidden transition-transform duration-200 ease-out
            hover:scale-110 active:scale-95;
@@ -95,7 +118,8 @@
 
   .sparkle-button::after {
     content: '';
-    @apply absolute inset-0 bg-white/20 rounded-full opacity-0
+    background-color: rgba(255, 255, 0, 0.2);
+    @apply absolute inset-0 rounded-full opacity-0
            transition-opacity duration-200;
   }
 
@@ -103,20 +127,15 @@
     @apply opacity-100;
   }
 
-  /* Neumorphic Components */
+  /* Neumorphic styles (mapped to dark theme) */
   .neu-panel {
-    @apply bg-neumorphic-base rounded-2xl;
-    box-shadow: var(--neu-shadow);
+    background-color: #1A1A1A;
+    @apply rounded-2xl border border-white/10;
   }
 
   .neu-panel-sm {
-    @apply bg-neumorphic-base rounded-xl;
-    box-shadow: var(--neu-shadow-sm);
-  }
-
-  .neu-panel-inset {
-    @apply bg-neumorphic-base rounded-2xl;
-    box-shadow: var(--neu-shadow-inset);
+    background-color: #1A1A1A;
+    @apply rounded-xl border border-white/10;
   }
 
   .neu-card {
@@ -124,57 +143,46 @@
   }
 
   .btn-neu {
-    @apply bg-neumorphic-base text-neumorphic-text font-semibold py-3 px-6 rounded-xl
-           transition-all duration-150 ease-out;
-    box-shadow: var(--neu-shadow-sm);
+    background-color: #2A2A2A;
+    @apply text-white font-semibold py-3 px-6 rounded-xl
+           border border-white/10
+           transition-all duration-150 ease-out
+           active:scale-95;
   }
 
   .btn-neu:hover {
-    box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light);
-  }
-
-  .btn-neu:active {
-    box-shadow: var(--neu-shadow-inset);
-  }
-
-  .btn-neu:disabled {
-    @apply opacity-50 cursor-not-allowed;
+    background-color: #3A3A3A;
   }
 
   .btn-neu-accent {
-    @apply bg-gradient-vibe text-white font-semibold py-3 px-6 rounded-xl
-           transition-all duration-150 ease-out;
-    box-shadow: var(--neu-shadow-sm);
+    background-color: #FFFF00;
+    @apply text-black font-bold py-3 px-6 rounded-xl
+           transition-all duration-150 ease-out
+           active:scale-95;
   }
 
   .btn-neu-accent:hover {
-    box-shadow: var(--neu-shadow);
-  }
-
-  .btn-neu-accent:active {
-    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
+    background-color: #E6E600;
   }
 
   .input-neu {
-    @apply bg-neumorphic-base rounded-xl px-4 py-3
-           text-neumorphic-text placeholder-neumorphic-text-secondary
-           outline-none transition-all duration-200;
-    box-shadow: var(--neu-shadow-inset);
-  }
-
-  .input-neu:focus {
-    @apply ring-2 ring-vibe-purple/50;
+    background-color: #0A0A0A;
+    @apply rounded-xl px-4 py-3
+           text-white placeholder-gray-600
+           border border-white/10
+           outline-none transition-all duration-200
+           focus:ring-2 focus:ring-yellow-400/50;
   }
 
   .avatar-neu {
-    @apply rounded-full bg-neumorphic-base;
-    box-shadow: var(--neu-shadow-sm);
+    background-color: #1A1A1A;
+    @apply rounded-full border border-white/10;
   }
 }
 
 @layer utilities {
   .text-shadow-glow {
-    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    text-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
   }
 
   .scrollbar-hide {
@@ -195,7 +203,7 @@
   }
 }
 
-/* Custom animations for smoother interactions */
+/* Shimmer animation for loading states */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -209,14 +217,14 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
-/* Smooth page transitions */
+/* Page transitions */
 .page-transition-enter {
   opacity: 0;
   transform: translateY(10px);

@@ -15,14 +15,27 @@ const nextConfig = {
         protocol: 'http',
         hostname: 'localhost',
       },
+      {
+        protocol: 'https',
+        hostname: '*.railway.app',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 's3.amazonaws.com',
+      },
     ],
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     return [
       {
         // Proxy all API routes except auth/me (handled by Next.js route)
         source: '/api/:path((?!auth/me).*)',
-        destination: 'http://localhost:4000/:path*',
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

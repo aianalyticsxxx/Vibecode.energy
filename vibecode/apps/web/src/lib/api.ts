@@ -20,12 +20,67 @@ export interface Vibe {
   createdAt: string;
   sparkleCount: number;
   hasSparkled: boolean;
+  isLate: boolean;
+  lateByMinutes: number;
   user: {
     id: string;
     username: string;
     displayName: string;
     avatarUrl: string | null;
   };
+}
+
+export interface VibecheckStatus {
+  vibecheck: {
+    id: string;
+    vibecheckDate: string;
+    triggerTime: string;
+    windowEndTime: string;
+  } | null;
+  status: 'waiting' | 'active' | 'late' | 'closed';
+  timeRemainingSeconds: number | null;
+  hasPostedToday: boolean;
+  userPostIsLate: boolean | null;
+}
+
+export interface UserStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastPostDate: string | null;
+  streakStartedAt: string | null;
+  milestone: {
+    days: number;
+    name: string;
+    emoji: string;
+  } | null;
+  nextMilestone: {
+    days: number;
+    name: string;
+    emoji: string;
+    daysRemaining: number;
+  } | null;
+}
+
+export interface Reaction {
+  id: string;
+  vibeId: string;
+  userId: string;
+  reactionType: 'sparkle' | 'photo';
+  imageUrl: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+}
+
+export interface ReactionsResponse {
+  reactions: Reaction[];
+  total: number;
+  sparkleCount: number;
+  photoCount: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -191,15 +246,48 @@ export const api = {
 
   deleteVibe: (id: string) => del<void>(`/vibes/${id}`),
 
-  // Sparkles
-  sparkleVibe: (vibeId: string) => post<{ sparkleCount: number }>(`/vibes/${vibeId}/sparkle`),
+  // Discovery feed
+  getDiscoveryFeed: (cursor?: string, sort: 'recent' | 'popular' = 'recent') =>
+    get<PaginatedResponse<Vibe>>(`/vibes/discovery?sort=${sort}${cursor ? `&cursor=${cursor}` : ''}`),
 
-  unsparkleVibe: (vibeId: string) => del<{ sparkleCount: number }>(`/vibes/${vibeId}/sparkle`),
+  // Sparkles
+  sparkleVibe: (vibeId: string) => post<{ sparkleCount: number }>(`/vibes/${vibeId}/vibe`),
+
+  unsparkleVibe: (vibeId: string) => del<{ sparkleCount: number }>(`/vibes/${vibeId}/vibe`),
+
+  // Photo reactions
+  addPhotoReaction: (vibeId: string, imageUrl: string, imageKey: string) =>
+    post<{ success: boolean; reactionCount: number }>(`/vibes/${vibeId}/reactions/photo`, { imageUrl, imageKey }),
+
+  removePhotoReaction: (vibeId: string) =>
+    del<{ success: boolean; reactionCount: number }>(`/vibes/${vibeId}/reactions/photo`),
+
+  getReactions: (vibeId: string) => get<ReactionsResponse>(`/vibes/${vibeId}/reactions`),
 
   // Users
   getUser: (username: string) =>
     get<{ user: import('./auth').User; vibes: Vibe[] }>(`/users/${username}`),
 
+  // Streaks
+  getUserStreak: (username: string) => get<UserStreak>(`/users/${username}/streak`),
+
+  getStreakLeaderboard: () =>
+    get<{
+      leaderboard: Array<{
+        rank: number;
+        username: string;
+        displayName: string;
+        avatarUrl: string | null;
+        currentStreak: number;
+        milestone: { days: number; name: string; emoji: string } | null;
+      }>;
+    }>('/users/streaks/leaderboard'),
+
+  // VibeCheck
+  getVibecheckStatus: () => get<VibecheckStatus>('/vibecheck/today'),
+
+  generateVibecheck: () => post<{ id: string; triggerTime: string; windowEndTime: string }>('/vibecheck/generate'),
+
   // Daily vibe check
-  getDailyVibeStatus: () => get<{ hasPostedToday: boolean; todaysVibe: Vibe | null }>('/vibes/daily-status'),
+  getDailyVibeStatus: () => get<{ hasPostedToday: boolean; todaysVibe: Vibe | null }>('/vibes/today'),
 };

@@ -13,6 +13,7 @@ import { vibeRoutes } from './routes/vibes/index.js';
 import { reactionRoutes } from './routes/reactions/index.js';
 import { userRoutes } from './routes/users/index.js';
 import { uploadRoutes } from './routes/upload/index.js';
+import { vibecheckRoutes } from './routes/vibecheck/index.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -22,8 +23,30 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // Register CORS
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ].filter(Boolean);
+
   await app.register(fastifyCors, {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      // Check if origin matches allowed list or is a Railway domain
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.railway.app') ||
+        origin.endsWith('.up.railway.app')
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
@@ -53,6 +76,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(reactionRoutes, { prefix: '/vibes' });
   await app.register(userRoutes, { prefix: '/users' });
   await app.register(uploadRoutes, { prefix: '/upload' });
+  await app.register(vibecheckRoutes, { prefix: '/vibecheck' });
 
   // Health check endpoint
   app.get('/health', async () => {

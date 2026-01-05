@@ -6,10 +6,13 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { api, Vibe } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useStreak } from '@/hooks/useStreak';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { CaptureGate } from '@/components/capture/CaptureGate';
+import { StreakDisplay } from '@/components/profile/StreakDisplay';
+import { LateBadge } from '@/components/feed/LateBadge';
 import type { User } from '@/lib/auth';
 
 interface ProfileData {
@@ -35,6 +38,7 @@ export default function ProfilePage() {
     },
   });
 
+  const { streak } = useStreak(username);
   const isOwnProfile = currentUser?.username === username;
 
   if (isLoading) {
@@ -104,6 +108,18 @@ export default function ProfilePage() {
               <p className="text-white/70 mb-4 max-w-xs mx-auto">{user.bio}</p>
             )}
 
+            {/* Streak Display */}
+            {streak && (
+              <div className="flex justify-center mb-4">
+                <StreakDisplay
+                  streak={streak}
+                  size="lg"
+                  showMilestone
+                  showNextMilestone={isOwnProfile}
+                />
+              </div>
+            )}
+
             {/* Stats */}
             <div className="flex justify-center gap-8 py-4 border-y border-glass-border">
               <div className="text-center">
@@ -116,6 +132,12 @@ export default function ProfilePage() {
                 </p>
                 <p className="text-white/50 text-sm">Sparkles</p>
               </div>
+              {streak && (
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-white">{streak.longestStreak}</p>
+                  <p className="text-white/50 text-sm">Best Streak</p>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -161,12 +183,21 @@ export default function ProfilePage() {
                     className="object-cover transition-transform group-hover:scale-105"
                     sizes="(max-width: 768px) 33vw, 170px"
                   />
+                  {/* Late indicator */}
+                  {vibe.isLate && vibe.lateByMinutes > 0 && (
+                    <div className="absolute top-1 right-1">
+                      <span className="text-orange-400 text-xs">⏰</span>
+                    </div>
+                  )}
                   {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                     <div className="flex items-center gap-2 text-white">
                       <span className="text-lg">✨</span>
                       <span className="font-semibold">{vibe.sparkleCount}</span>
                     </div>
+                    {vibe.isLate && vibe.lateByMinutes > 0 && (
+                      <LateBadge lateByMinutes={vibe.lateByMinutes} className="text-xs" />
+                    )}
                   </div>
                 </motion.div>
               ))}

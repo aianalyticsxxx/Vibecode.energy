@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -13,11 +12,49 @@ export interface BottomNavProps {
 
 const navItems = [
   {
+    href: '/feed',
+    label: 'Feed',
+    icon: (active: boolean) => (
+      <svg
+        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: '/discover',
+    label: 'Discover',
+    icon: (active: boolean) => (
+      <svg
+        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+        />
+      </svg>
+    ),
+  },
+  {
     href: '/capture',
     label: 'Capture',
-    icon: (active: boolean, isNeumorphic: boolean) => (
+    icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-vibe-purple' : isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/60')}
+        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -37,30 +74,11 @@ const navItems = [
     ),
   },
   {
-    href: '/feed',
-    label: 'Feed',
-    icon: (active: boolean, isNeumorphic: boolean) => (
-      <svg
-        className={cn('w-6 h-6', active ? 'text-vibe-purple' : isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/60')}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-        />
-      </svg>
-    ),
-  },
-  {
     href: '/profile',
     label: 'Profile',
-    icon: (active: boolean, isNeumorphic: boolean) => (
+    icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-vibe-purple' : isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/60')}
+        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -79,8 +97,6 @@ const navItems = [
 export function BottomNav({ className }: BottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { theme } = useTheme();
-  const isNeumorphic = theme === 'neumorphic';
 
   const getHref = (href: string) => {
     if (href === '/profile' && user) {
@@ -100,9 +116,7 @@ export function BottomNav({ className }: BottomNavProps) {
     <nav
       className={cn(
         'fixed bottom-0 left-0 right-0 z-50',
-        isNeumorphic
-          ? 'bg-neumorphic-base shadow-[0_-4px_16px_rgba(163,177,198,0.3)]'
-          : 'bg-glass-white/90 backdrop-blur-glass-heavy border-t border-glass-border',
+        'bg-black/95 backdrop-blur-sm border-t border-bereal-gray-light',
         'safe-bottom',
         className
       )}
@@ -115,20 +129,17 @@ export function BottomNav({ className }: BottomNavProps) {
               <Link
                 key={item.href}
                 href={getHref(item.href)}
-                className={cn(
-                  'relative flex flex-col items-center py-2 px-4 rounded-xl transition-shadow',
-                  isNeumorphic && active && 'shadow-neu-inset-sm'
-                )}
+                className="relative flex flex-col items-center py-2 px-4"
               >
                 <motion.div
                   whileTap={{ scale: 0.9 }}
                   className="relative"
                 >
-                  {item.icon(active, isNeumorphic)}
-                  {active && !isNeumorphic && (
+                  {item.icon(active)}
+                  {active && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-vibe-purple rounded-full"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -136,7 +147,7 @@ export function BottomNav({ className }: BottomNavProps) {
                 <span
                   className={cn(
                     'text-xs mt-1 transition-colors',
-                    active ? 'text-vibe-purple font-medium' : isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/50'
+                    active ? 'text-white font-medium' : 'text-bereal-white-dim'
                   )}
                 >
                   {item.label}

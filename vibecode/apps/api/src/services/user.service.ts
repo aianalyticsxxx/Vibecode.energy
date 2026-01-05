@@ -56,31 +56,12 @@ export class UserService {
         u.bio,
         u.created_at,
         COUNT(DISTINCT v.id) as vibe_count,
-        COALESCE(s.streak_count, 0) as streak_count
+        COALESCE(us.current_streak, 0) as streak_count
       FROM users u
       LEFT JOIN vibes v ON v.user_id = u.id
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) as streak_count
-        FROM (
-          SELECT DISTINCT DATE(created_at) as vibe_date
-          FROM vibes
-          WHERE user_id = u.id
-          ORDER BY vibe_date DESC
-        ) dates
-        WHERE vibe_date >= CURRENT_DATE - (
-          SELECT COUNT(*) - 1
-          FROM (
-            SELECT DISTINCT DATE(created_at) as d
-            FROM vibes
-            WHERE user_id = u.id
-              AND created_at >= CURRENT_DATE - INTERVAL '365 days'
-            ORDER BY d DESC
-          ) consecutive
-          WHERE d >= CURRENT_DATE - INTERVAL '365 days'
-        )
-      ) s ON true
+      LEFT JOIN user_streaks us ON us.user_id = u.id
       WHERE u.username = $1
-      GROUP BY u.id, s.streak_count`,
+      GROUP BY u.id, us.current_streak`,
       [username]
     );
 

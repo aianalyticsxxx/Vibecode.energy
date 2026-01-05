@@ -34,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark theme-glass">
-      <body className="min-h-screen overflow-x-hidden">
+    <html lang="en" className="dark">
+      <body className="min-h-screen overflow-x-hidden bg-black text-white">
         <Providers>
           <ThemedBackground />
           <div className="relative z-10 min-h-screen">{children}</div>

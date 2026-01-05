@@ -12,6 +12,10 @@ interface GetVibesQuery {
   limit?: number;
 }
 
+interface DiscoveryQuery extends GetVibesQuery {
+  sort?: 'recent' | 'popular';
+}
+
 interface VibeParams {
   id: string;
 }
@@ -46,6 +50,23 @@ export const vibeRoutes: FastifyPluginAsync = async (fastify) => {
       hasPostedToday: !!todayVibe,
       vibe: todayVibe,
     };
+  });
+
+  // GET /vibes/discovery - Global discovery feed
+  fastify.get<{ Querystring: DiscoveryQuery }>('/discovery', {
+    preHandler: [fastify.optionalAuth],
+  }, async (request, _reply) => {
+    const { cursor, limit = 20, sort = 'recent' } = request.query;
+    const userId = request.user?.userId;
+
+    const vibes = await vibeService.getDiscoveryFeed({
+      cursor,
+      limit: Math.min(limit, 50),
+      currentUserId: userId,
+      sort,
+    });
+
+    return vibes;
   });
 
   // GET /vibes/:id - Get single vibe

@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { VibecheckService } from './vibecheck.service.js';
+import { StreakService } from './streak.service.js';
 
 interface CreateVibeData {
   userId: string;
@@ -11,6 +13,10 @@ interface FeedOptions {
   cursor?: string;
   limit: number;
   currentUserId?: string;
+}
+
+interface DiscoveryFeedOptions extends FeedOptions {
+  sort?: 'recent' | 'popular';
 }
 
 interface Vibe {
@@ -27,6 +33,8 @@ interface Vibe {
   };
   reactionCount: number;
   hasReacted: boolean;
+  isLate: boolean;
+  lateByMinutes: number;
 }
 
 interface FeedResult {
@@ -36,7 +44,13 @@ interface FeedResult {
 }
 
 export class VibeService {
-  constructor(private fastify: FastifyInstance) {}
+  private vibecheckService: VibecheckService;
+  private streakService: StreakService;
+
+  constructor(private fastify: FastifyInstance) {
+    this.vibecheckService = new VibecheckService(fastify);
+    this.streakService = new StreakService(fastify);
+  }
 
   /**
    * Get chronological feed with cursor pagination
@@ -71,6 +85,8 @@ export class VibeService {
         v.caption,
         v.vibe_date,
         v.created_at,
+        v.is_late,
+        v.late_by_minutes,
         u.id as author_id,
         u.username,
         u.display_name,
@@ -90,8 +106,9 @@ export class VibeService {
 
     const hasMore = result.rows.length > limit;
     const vibes = result.rows.slice(0, limit).map(this.mapVibeRow.bind(this));
-    const nextCursor = hasMore && vibes.length > 0
-      ? vibes[vibes.length - 1].createdAt.toISOString()
+    const lastVibe = vibes[vibes.length - 1];
+    const nextCursor = hasMore && lastVibe
+      ? lastVibe.createdAt.toISOString()
       : undefined;
 
     return {
@@ -113,6 +130,8 @@ export class VibeService {
         v.caption,
         v.vibe_date,
         v.created_at,
+        v.is_late,
+        v.late_by_minutes,
         u.id as author_id,
         u.username,
         u.display_name,
@@ -150,6 +169,8 @@ export class VibeService {
         v.caption,
         v.vibe_date,
         v.created_at,
+        v.is_late,
+        v.late_by_minutes,
         u.id as author_id,
         u.username,
         u.display_name,
@@ -176,23 +197,43 @@ export class VibeService {
    */
   async createOrReplaceTodayVibe(data: CreateVibeData): Promise<Vibe> {
     const { userId, imageUrl, imageKey, caption } = data;
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    // Get today's vibecheck to calculate late status
+    const vibecheck = await this.vibecheckService.getTodaysVibecheck();
+    let isLate = false;
+    let lateByMinutes = 0;
+    let vibecheckId: string | null = null;
+
+    if (vibecheck) {
+      vibecheckId = vibecheck.id;
+      const lateStatus = this.vibecheckService.calculateLateStatus(vibecheck.triggerTime, now);
+      isLate = lateStatus.isLate;
+      lateByMinutes = lateStatus.lateByMinutes;
+    }
 
     // Use UPSERT (ON CONFLICT) for atomic create/replace
     const result = await this.fastify.db.query(
-      `INSERT INTO vibes (user_id, image_url, image_key, caption, vibe_date)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO vibes (user_id, image_url, image_key, caption, vibe_date, vibecheck_id, is_late, late_by_minutes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (user_id, vibe_date)
        DO UPDATE SET
          image_url = EXCLUDED.image_url,
          image_key = EXCLUDED.image_key,
          caption = EXCLUDED.caption,
+         vibecheck_id = EXCLUDED.vibecheck_id,
+         is_late = EXCLUDED.is_late,
+         late_by_minutes = EXCLUDED.late_by_minutes,
          created_at = NOW()
        RETURNING id`,
-      [userId, imageUrl, imageKey, caption, today]
+      [userId, imageUrl, imageKey, caption, today, vibecheckId, isLate, lateByMinutes]
     );
 
     const vibeId = result.rows[0].id;
+
+    // Update user's streak
+    await this.streakService.updateStreakOnPost(userId, now);
 
     // Fetch the complete vibe with author info
     const vibe = await this.getById(vibeId, userId);
@@ -201,6 +242,81 @@ export class VibeService {
     }
 
     return vibe;
+  }
+
+  /**
+   * Get discovery feed (all vibes from all users)
+   */
+  async getDiscoveryFeed(options: DiscoveryFeedOptions): Promise<FeedResult> {
+    const { cursor, limit, currentUserId, sort = 'recent' } = options;
+
+    const params: (string | number)[] = [];
+    let paramIndex = 1;
+
+    let cursorCondition = '';
+    if (cursor) {
+      if (sort === 'recent') {
+        cursorCondition = `WHERE v.created_at < $${paramIndex}`;
+      } else {
+        cursorCondition = `WHERE (COUNT(r.id), v.created_at) < ($${paramIndex}::int, $${paramIndex + 1}::timestamptz)`;
+        paramIndex++;
+      }
+      params.push(cursor);
+      paramIndex++;
+    }
+
+    const limitParam = paramIndex;
+    params.push(limit + 1);
+    paramIndex++;
+
+    let hasReactedClause = 'false as has_reacted';
+    if (currentUserId) {
+      hasReactedClause = `EXISTS(SELECT 1 FROM reactions WHERE vibe_id = v.id AND user_id = $${paramIndex}) as has_reacted`;
+      params.push(currentUserId);
+    }
+
+    const orderBy = sort === 'popular'
+      ? 'COUNT(r.id) DESC, v.created_at DESC'
+      : 'v.created_at DESC';
+
+    const query = `
+      SELECT
+        v.id,
+        v.image_url,
+        v.caption,
+        v.vibe_date,
+        v.created_at,
+        v.is_late,
+        v.late_by_minutes,
+        u.id as author_id,
+        u.username,
+        u.display_name,
+        u.avatar_url,
+        COUNT(r.id) as reaction_count,
+        ${hasReactedClause}
+      FROM vibes v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN reactions r ON r.vibe_id = v.id
+      ${cursor && sort === 'recent' ? cursorCondition : ''}
+      GROUP BY v.id, u.id
+      ORDER BY ${orderBy}
+      LIMIT $${limitParam}
+    `;
+
+    const result = await this.fastify.db.query(query, params);
+
+    const hasMore = result.rows.length > limit;
+    const vibes = result.rows.slice(0, limit).map(this.mapVibeRow.bind(this));
+    const lastVibe = vibes[vibes.length - 1];
+    const nextCursor = hasMore && lastVibe
+      ? lastVibe.createdAt.toISOString()
+      : undefined;
+
+    return {
+      vibes,
+      nextCursor,
+      hasMore,
+    };
   }
 
   /**
@@ -233,6 +349,8 @@ export class VibeService {
       },
       reactionCount: parseInt(row.reaction_count as string, 10) || 0,
       hasReacted: row.has_reacted as boolean,
+      isLate: row.is_late as boolean || false,
+      lateByMinutes: (row.late_by_minutes as number) || 0,
     };
   }
 }

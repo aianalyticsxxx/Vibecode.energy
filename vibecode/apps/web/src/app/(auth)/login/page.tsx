@@ -4,17 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
-import { cn } from '@/lib/utils';
-import { GlassPanel } from '@/components/ui/GlassPanel';
 import { GitHubLoginButton } from '@/components/auth/GitHubLoginButton';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
-  const { theme } = useTheme();
-  const isNeumorphic = theme === 'neumorphic';
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -25,119 +19,96 @@ export default function LoginPage() {
   // Don't render if already authenticated
   if (isLoading || isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-vibe-purple border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-8 h-8 border-2 border-bereal-yellow border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {/* Theme Toggle in corner */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
-
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-black">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm text-center"
       >
-        <GlassPanel className="text-center" padding="lg">
-          {/* Logo */}
+        {/* Logo */}
+        <motion.div
+          className="text-6xl mb-6"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200 }}
+        >
+          ⚡
+        </motion.div>
+
+        {/* Title */}
+        <h1 className="text-4xl font-black text-white mb-2">
+          VibeCode
+        </h1>
+
+        {/* Tagline */}
+        <p className="text-bereal-white-muted mb-12">
+          Your daily coding vibe.
+        </p>
+
+        {/* Login button */}
+        <GitHubLoginButton />
+
+        {/* Features */}
+        <div className="mt-12 space-y-6">
           <motion.div
-            className="text-6xl mb-4"
-            animate={{
-              rotate: [0, 10, -10, 0],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-4 text-left"
           >
-            ✨
+            <div className="w-12 h-12 rounded-full bg-bereal-gray flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">📸</span>
+            </div>
+            <div>
+              <p className="font-semibold text-white">Daily VibeCheck</p>
+              <p className="text-sm text-bereal-white-dim">Random time, one photo</p>
+            </div>
           </motion.div>
 
-          {/* Title */}
-          <h1 className={cn(
-            "text-3xl font-bold mb-2",
-            isNeumorphic ? "text-neumorphic-text" : "gradient-text"
-          )}>VibeCode Energy</h1>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-4 text-left"
+          >
+            <div className="w-12 h-12 rounded-full bg-bereal-gray flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">🔥</span>
+            </div>
+            <div>
+              <p className="font-semibold text-white">Build Streaks</p>
+              <p className="text-sm text-bereal-white-dim">Don&apos;t break the chain</p>
+            </div>
+          </motion.div>
 
-          {/* Tagline */}
-          <p className={cn("mb-8", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/60")}>
-            Connect with vibecoders around the world
-          </p>
-
-          {/* Login button */}
-          <GitHubLoginButton />
-
-          {/* Features */}
-          <div className="mt-8 space-y-4">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-3 text-left"
-            >
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                isNeumorphic ? "shadow-neu-sm bg-neumorphic-base" : "bg-vibe-purple/20"
-              )}>
-                <span className="text-lg">📸</span>
-              </div>
-              <div>
-                <p className={cn("font-medium", isNeumorphic ? "text-neumorphic-text" : "text-white/90")}>Daily photo</p>
-                <p className={cn("text-sm", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>Share one vibe per day</p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex items-center gap-3 text-left"
-            >
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                isNeumorphic ? "shadow-neu-sm bg-neumorphic-base" : "bg-vibe-blue/20"
-              )}>
-                <span className="text-lg">✨</span>
-              </div>
-              <div>
-                <p className={cn("font-medium", isNeumorphic ? "text-neumorphic-text" : "text-white/90")}>Sparkle reactions</p>
-                <p className={cn("text-sm", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>Spread good vibes</p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="flex items-center gap-3 text-left"
-            >
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                isNeumorphic ? "shadow-neu-sm bg-neumorphic-base" : "bg-vibe-teal/20"
-              )}>
-                <span className="text-lg">🌊</span>
-              </div>
-              <div>
-                <p className={cn("font-medium", isNeumorphic ? "text-neumorphic-text" : "text-white/90")}>Zen community</p>
-                <p className={cn("text-sm", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>Positive vibes only</p>
-              </div>
-            </motion.div>
-          </div>
-        </GlassPanel>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-4 text-left"
+          >
+            <div className="w-12 h-12 rounded-full bg-bereal-gray flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">👀</span>
+            </div>
+            <div>
+              <p className="font-semibold text-white">See Real Vibes</p>
+              <p className="text-sm text-bereal-white-dim">No filters, just code</p>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Footer */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className={cn("text-center text-xs mt-6", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/30")}
+          transition={{ delay: 0.5 }}
+          className="text-center text-xs mt-12 text-bereal-white-dim"
         >
           By continuing, you agree to our Terms of Service
         </motion.p>

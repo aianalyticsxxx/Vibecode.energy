@@ -7,6 +7,8 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { VibeButton } from './VibeButton';
+import { LateBadge } from './LateBadge';
+import { PhotoReactionsRow } from '@/components/reactions/PhotoReactionsRow';
 import { useTheme } from '@/hooks/useTheme';
 import type { Vibe } from '@/lib/api';
 
@@ -41,9 +43,12 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
           >
             {vibe.user.displayName}
           </Link>
-          <p className={cn("text-sm", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>
-            @{vibe.user.username} · {formatRelativeTime(vibe.createdAt)}
-          </p>
+          <div className={cn("text-sm flex items-center gap-2 flex-wrap", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>
+            <span>@{vibe.user.username} · {formatRelativeTime(vibe.createdAt)}</span>
+            {vibe.isLate && vibe.lateByMinutes > 0 && (
+              <LateBadge lateByMinutes={vibe.lateByMinutes} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -119,6 +124,11 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
               />
             </svg>
           </motion.button>
+        </div>
+
+        {/* Photo Reactions */}
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <PhotoReactionsRow vibeId={vibe.id} />
         </div>
       </div>
     </GlassPanel>

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { VibeFeed } from '@/components/feed/VibeFeed';
 import { CaptureGate } from '@/components/capture/CaptureGate';
+import { VibecheckBanner } from '@/components/vibecheck/VibecheckBanner';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +28,9 @@ export default function FeedPage() {
             See what everyone&apos;s vibing
           </p>
         </motion.div>
+
+        {/* VibeCheck Banner - shows when it's time to post */}
+        <VibecheckBanner />
 
         {/* Feed */}
         <motion.div
