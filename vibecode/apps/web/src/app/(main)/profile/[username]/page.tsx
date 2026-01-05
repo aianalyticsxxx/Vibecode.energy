@@ -11,7 +11,8 @@ import { useStreak } from '@/hooks/useStreak';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { CaptureGate } from '@/components/capture/CaptureGate';
+// CaptureGate disabled for testing - TODO: re-enable for production
+// import { CaptureGate } from '@/components/capture/CaptureGate';
 import { StreakDisplay } from '@/components/profile/StreakDisplay';
 import { LateBadge } from '@/components/feed/LateBadge';
 import { EditProfileModal } from '@/components/profile/EditProfileModal';
@@ -87,8 +88,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <CaptureGate>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Profile header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -243,7 +243,6 @@ export default function ProfilePage() {
             }}
           />
         )}
-      </div>
-    </CaptureGate>
+    </div>
   );
 }
