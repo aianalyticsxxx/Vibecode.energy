@@ -74,6 +74,14 @@ export class UploadService {
     const ext = fileName ? path.extname(fileName) : this.getExtensionFromContentType(contentType);
     const key = `vibes/${userId}/${timestamp}-${randomId}${ext}`;
 
+    this.fastify.log.info({
+      bucket: this.fastify.s3Config.bucket,
+      key,
+      contentType,
+      bufferSize: buffer.length,
+      endpoint: this.fastify.s3Config.endpoint,
+    }, 'Uploading file to S3/R2');
+
     const command = new PutObjectCommand({
       Bucket: this.fastify.s3Config.bucket,
       Key: key,
@@ -84,7 +92,19 @@ export class UploadService {
       },
     });
 
-    await this.fastify.s3.send(command);
+    try {
+      await this.fastify.s3.send(command);
+      this.fastify.log.info({ key }, 'File uploaded successfully');
+    } catch (err) {
+      const error = err as Error;
+      this.fastify.log.error({
+        message: error.message,
+        name: error.name,
+        code: (err as { Code?: string }).Code,
+        statusCode: (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode,
+      }, 'S3 upload failed');
+      throw err;
+    }
 
     // Generate the public URL for the file
     const fileUrl = this.getPublicUrl(key);

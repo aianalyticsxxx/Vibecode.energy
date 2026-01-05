@@ -143,8 +143,19 @@ export const vibeRoutes: FastifyPluginAsync = async (fastify) => {
           caption = (fields.caption as { value: string }).value;
         }
       } catch (err) {
-        fastify.log.error({ err }, 'Error processing file upload');
-        return reply.status(500).send({ error: 'Failed to process upload' });
+        const error = err as Error;
+        fastify.log.error({
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          s3Config: {
+            bucket: fastify.s3Config.bucket,
+            region: fastify.s3Config.region,
+            endpoint: fastify.s3Config.endpoint,
+            hasPublicUrl: !!fastify.s3Config.publicUrl,
+          }
+        }, 'Error processing file upload');
+        return reply.status(500).send({ error: `Failed to process upload: ${error.message}` });
       }
     } else {
       // Handle JSON body (pre-uploaded to S3)
