@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, RefObject } from 'react';
+import { useState, useEffect, useCallback, RefObject, useRef } from 'react';
 
 export interface UseCameraReturn {
   isLoading: boolean;
@@ -22,15 +22,24 @@ export function useCamera(
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isReady, setIsReady] = useState(false);
 
+  // Use ref to track current stream to avoid stale closure issues
+  const streamRef = useRef<MediaStream | null>(null);
+
   const startCamera = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setIsReady(false);
 
     try {
-      // Stop any existing stream
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      // Stop any existing stream using ref (avoids stale closure)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
+      // Also clear video srcObject
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
 
       const constraints: MediaStreamConstraints = {
@@ -43,6 +52,7 @@ export function useCamera(
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = mediaStream;
 
       // Set stream to video element
       if (videoRef.current) {
@@ -56,22 +66,48 @@ export function useCamera(
             return;
           }
 
-          const onPlaying = () => {
+          // If already playing, resolve immediately
+          if (!video.paused && video.readyState >= 2) {
+            resolve();
+            return;
+          }
+
+          const timeoutId = setTimeout(() => {
             video.removeEventListener('playing', onPlaying);
+            video.removeEventListener('loadeddata', onLoaded);
+            video.removeEventListener('error', onError);
+            // Resolve anyway after timeout - video might be ready
+            resolve();
+          }, 3000);
+
+          const onPlaying = () => {
+            clearTimeout(timeoutId);
+            video.removeEventListener('playing', onPlaying);
+            video.removeEventListener('loadeddata', onLoaded);
             video.removeEventListener('error', onError);
             resolve();
           };
 
+          const onLoaded = () => {
+            // Try to play when data is loaded
+            video.play().catch(() => {});
+          };
+
           const onError = () => {
+            clearTimeout(timeoutId);
             video.removeEventListener('playing', onPlaying);
+            video.removeEventListener('loadeddata', onLoaded);
             video.removeEventListener('error', onError);
             reject(new Error('Video failed to play'));
           };
 
           video.addEventListener('playing', onPlaying);
+          video.addEventListener('loadeddata', onLoaded);
           video.addEventListener('error', onError);
 
-          video.play().catch(reject);
+          video.play().catch(() => {
+            // Play might fail, but loadeddata listener will retry
+          });
         });
 
         setIsReady(true);
@@ -109,7 +145,7 @@ export function useCamera(
     } finally {
       setIsLoading(false);
     }
-  }, [facingMode, stream, videoRef]);
+  }, [facingMode, videoRef]);
 
   const retryPermission = useCallback(() => {
     startCamera();
@@ -117,7 +153,10 @@ export function useCamera(
 
   // Restart camera (useful after screen capture disrupts the stream)
   const restartCamera = useCallback(() => {
-    startCamera();
+    // Small delay to let browser clean up screen capture resources
+    setTimeout(() => {
+      startCamera();
+    }, 100);
   }, [startCamera]);
 
   // Start camera on mount and when facing mode changes
@@ -126,8 +165,9 @@ export function useCamera(
 
     // Cleanup on unmount
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,7 +183,7 @@ export function useCamera(
         }
       } else {
         // Resume video when tab is visible
-        if (videoRef.current && stream) {
+        if (videoRef.current && streamRef.current) {
           videoRef.current.play().catch(console.error);
         }
       }
@@ -154,7 +194,7 @@ export function useCamera(
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [stream, videoRef]);
+  }, [videoRef]);
 
   return {
     isLoading,
