@@ -88,11 +88,12 @@ export default function CapturePage() {
         // Draw screenshot as background
         ctx.drawImage(screenshotImg, 0, 0, canvas.width, canvas.height);
 
-        // Draw selfie in top-left corner (BeReal style)
-        const selfieSize = Math.min(canvas.width, canvas.height) * 0.25;
-        const selfieMargin = 16;
+        // Draw selfie in top-left corner (BeReal style) - make it bigger and more visible
+        const selfieSize = Math.min(canvas.width, canvas.height) * 0.35; // 35% of smaller dimension
+        const selfieMargin = 24;
         const selfieX = selfieMargin;
         const selfieY = selfieMargin;
+        const radius = 16;
 
         console.log('Drawing selfie overlay:', {
           selfieSize,
@@ -104,20 +105,22 @@ export default function CapturePage() {
           canvasHeight: canvas.height
         });
 
+        // Draw shadow behind selfie for visibility
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.roundRect(selfieX, selfieY, selfieSize, selfieSize, radius);
+        ctx.fill();
+        ctx.restore();
+
         // Draw selfie with rounded corners
         ctx.save();
         ctx.beginPath();
-        const radius = 12;
-        ctx.moveTo(selfieX + radius, selfieY);
-        ctx.lineTo(selfieX + selfieSize - radius, selfieY);
-        ctx.quadraticCurveTo(selfieX + selfieSize, selfieY, selfieX + selfieSize, selfieY + radius);
-        ctx.lineTo(selfieX + selfieSize, selfieY + selfieSize - radius);
-        ctx.quadraticCurveTo(selfieX + selfieSize, selfieY + selfieSize, selfieX + selfieSize - radius, selfieY + selfieSize);
-        ctx.lineTo(selfieX + radius, selfieY + selfieSize);
-        ctx.quadraticCurveTo(selfieX, selfieY + selfieSize, selfieX, selfieY + selfieSize - radius);
-        ctx.lineTo(selfieX, selfieY + radius);
-        ctx.quadraticCurveTo(selfieX, selfieY, selfieX + radius, selfieY);
-        ctx.closePath();
+        ctx.roundRect(selfieX, selfieY, selfieSize, selfieSize, radius);
         ctx.clip();
 
         // Calculate selfie crop (center crop to square)
@@ -135,20 +138,11 @@ export default function CapturePage() {
         console.log('Selfie drawn to canvas at', selfieX, selfieY, 'size', selfieSize);
         ctx.restore();
 
-        // Add white border around selfie
+        // Add thick white border around selfie
         ctx.strokeStyle = 'white';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.moveTo(selfieX + radius, selfieY);
-        ctx.lineTo(selfieX + selfieSize - radius, selfieY);
-        ctx.quadraticCurveTo(selfieX + selfieSize, selfieY, selfieX + selfieSize, selfieY + radius);
-        ctx.lineTo(selfieX + selfieSize, selfieY + selfieSize - radius);
-        ctx.quadraticCurveTo(selfieX + selfieSize, selfieY + selfieSize, selfieX + selfieSize - radius, selfieY + selfieSize);
-        ctx.lineTo(selfieX + radius, selfieY + selfieSize);
-        ctx.quadraticCurveTo(selfieX, selfieY + selfieSize, selfieX, selfieY + selfieSize - radius);
-        ctx.lineTo(selfieX, selfieY + radius);
-        ctx.quadraticCurveTo(selfieX, selfieY, selfieX + radius, selfieY);
-        ctx.closePath();
+        ctx.roundRect(selfieX, selfieY, selfieSize, selfieSize, radius);
         ctx.stroke();
 
         // Clean up URLs
