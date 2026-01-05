@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install -g pnpm && pnpm install",
+  "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @vibecode/web build",
   "outputDirectory": "apps/web/.next"
 }
