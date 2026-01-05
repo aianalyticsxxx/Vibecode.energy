@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassPanel } from '@/components/ui/GlassPanel';
@@ -10,11 +10,13 @@ import { useCamera } from '@/hooks/useCamera';
 export interface CameraCaptureProps {
   onCapture: (imageBlob: Blob) => void;
   className?: string;
+  allowUpload?: boolean;
 }
 
-export function CameraCapture({ onCapture, className }: CameraCaptureProps) {
+export function CameraCapture({ onCapture, className, allowUpload = true }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
@@ -65,6 +67,21 @@ export function CameraCapture({ onCapture, className }: CameraCaptureProps) {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   }, []);
 
+  const handleFileUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onCapture(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [onCapture]);
+
+  const openFilePicker = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   if (error || !hasPermission) {
     return (
       <GlassPanel className={cn('p-8 text-center', className)}>
@@ -73,9 +90,26 @@ export function CameraCapture({ onCapture, className }: CameraCaptureProps) {
         <p className="text-white/60 mb-6">
           {error || 'Please allow camera access to share your vibe'}
         </p>
-        <Button onClick={retryPermission} variant="gradient">
-          Try Again
-        </Button>
+        <div className="flex flex-col gap-3">
+          <Button onClick={retryPermission} variant="gradient">
+            Try Again
+          </Button>
+          {allowUpload && (
+            <>
+              <p className="text-white/40 text-sm">or</p>
+              <Button onClick={openFilePicker} variant="glass">
+                Upload Photo Instead
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </>
+          )}
+        </div>
       </GlassPanel>
     );
   }

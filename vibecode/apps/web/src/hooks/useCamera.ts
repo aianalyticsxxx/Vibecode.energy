@@ -54,7 +54,13 @@ export function useCamera(
 
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setError('Camera permission was denied. Please allow camera access in your browser settings.');
+          // Check if it's a system-level denial vs browser-level
+          const errorMessage = err.message?.toLowerCase() || '';
+          if (errorMessage.includes('system') || errorMessage.includes('permission denied by system')) {
+            setError('Camera blocked by your system. On Mac: System Settings → Privacy & Security → Camera → Enable your browser.');
+          } else {
+            setError('Camera permission was denied. Please allow camera access in your browser settings.');
+          }
         } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
           setError('No camera found. Please connect a camera and try again.');
         } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
