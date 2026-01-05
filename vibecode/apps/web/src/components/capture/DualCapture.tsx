@@ -116,34 +116,29 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
     });
   }, []);
 
-  // Simultaneous capture: screen + selfie at the same time
+  // Simultaneous capture: selfie first, then screen
   const captureSimultaneous = useCallback(async () => {
     setError(null);
     setMode('capturing');
     setIsCapturing(true);
 
     try {
-      // Start screen capture first (requires user interaction for permission)
-      const screenshotPromise = captureScreenshot();
-
-      // Small delay then capture selfie while screen share dialog is open
-      // The selfie is captured right when user confirms screen share
-      const screenshot = await screenshotPromise;
-
-      if (!screenshot) {
-        setError('Screen sharing was denied. Please allow screen capture or try manual upload.');
-        setMode('ready');
-        setIsCapturing(false);
-        // Restart camera in case it got disrupted
-        restartCamera();
-        return;
-      }
-
-      // Capture selfie immediately after screenshot
+      // Capture selfie FIRST (before screen share dialog changes expression)
       const selfie = await captureSelfieFromVideo();
 
       if (!selfie) {
         setError('Failed to capture selfie. Please try again.');
+        setMode('ready');
+        setIsCapturing(false);
+        restartCamera();
+        return;
+      }
+
+      // Now capture screenshot (user will see screen share dialog)
+      const screenshot = await captureScreenshot();
+
+      if (!screenshot) {
+        setError('Screen sharing was denied. Please allow screen capture or try manual upload.');
         setMode('ready');
         setIsCapturing(false);
         // Restart camera in case it got disrupted
