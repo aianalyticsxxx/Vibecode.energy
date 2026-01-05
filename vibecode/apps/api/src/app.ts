@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyCors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipart from '@fastify/multipart';
 
 import { dbPlugin } from './plugins/db.js';
 import { authPlugin } from './plugins/auth.js';
@@ -63,6 +64,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     cookie: {
       cookieName: 'access_token',
       signed: false,
+    },
+  });
+
+  // Register multipart for file uploads
+  await app.register(fastifyMultipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max
+      files: 1,
     },
   });
 

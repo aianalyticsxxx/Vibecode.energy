@@ -1,11 +1,14 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { VibeService } from '../../services/vibe.service.js';
+import { UploadService } from '../../services/upload.service.js';
 
 interface CreateVibeBody {
   imageUrl: string;
   imageKey: string;
   caption?: string;
 }
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 interface GetVibesQuery {
   cursor?: string;
@@ -22,6 +25,7 @@ interface VibeParams {
 
 export const vibeRoutes: FastifyPluginAsync = async (fastify) => {
   const vibeService = new VibeService(fastify);
+  const uploadService = new UploadService(fastify);
 
   // GET /vibes - Chronological feed with cursor pagination
   fastify.get<{ Querystring: GetVibesQuery }>('/', {
@@ -85,15 +89,74 @@ export const vibeRoutes: FastifyPluginAsync = async (fastify) => {
     return vibe;
   });
 
-  // POST /vibes - Create or replace today's vibe
-  fastify.post<{ Body: CreateVibeBody }>('/', {
+  // POST /vibes - Create or replace today's vibe (supports multipart and JSON)
+  fastify.post('/', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { userId } = request.user;
-    const { imageUrl, imageKey, caption } = request.body;
 
-    if (!imageUrl || !imageKey) {
-      return reply.status(400).send({ error: 'Image URL and key are required' });
+    let imageUrl: string;
+    let imageKey: string;
+    let caption: string | undefined;
+
+    // Check if this is a multipart request
+    const contentType = request.headers['content-type'] || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle multipart file upload
+      try {
+        const data = await request.file();
+
+        if (!data) {
+          return reply.status(400).send({ error: 'No file uploaded' });
+        }
+
+        // Validate file type
+        if (!ALLOWED_IMAGE_TYPES.includes(data.mimetype)) {
+          return reply.status(400).send({
+            error: 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP'
+          });
+        }
+
+        // Get the file buffer
+        const chunks: Buffer[] = [];
+        for await (const chunk of data.file) {
+          chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+
+        // Upload to S3
+        const uploaded = await uploadService.uploadBuffer({
+          userId,
+          buffer,
+          contentType: data.mimetype,
+          fileName: data.filename,
+        });
+
+        imageUrl = uploaded.fileUrl;
+        imageKey = uploaded.key;
+
+        // Get caption from fields if provided
+        // Note: For multipart, we need to access fields differently
+        const fields = data.fields;
+        if (fields.caption && typeof fields.caption === 'object' && 'value' in fields.caption) {
+          caption = (fields.caption as { value: string }).value;
+        }
+      } catch (err) {
+        fastify.log.error({ err }, 'Error processing file upload');
+        return reply.status(500).send({ error: 'Failed to process upload' });
+      }
+    } else {
+      // Handle JSON body (pre-uploaded to S3)
+      const body = request.body as CreateVibeBody;
+
+      if (!body.imageUrl || !body.imageKey) {
+        return reply.status(400).send({ error: 'Image URL and key are required' });
+      }
+
+      imageUrl = body.imageUrl;
+      imageKey = body.imageKey;
+      caption = body.caption;
     }
 
     try {
