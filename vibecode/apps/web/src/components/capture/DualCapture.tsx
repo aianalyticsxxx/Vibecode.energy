@@ -86,8 +86,9 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
         video.srcObject = stream;
         await video.play();
 
-        // Wait a moment for video to be ready
-        await new Promise(r => setTimeout(r, 100));
+        // Wait longer for the screen share picker to fully close
+        // and for the actual screen content to be captured
+        await new Promise(r => setTimeout(r, 500));
 
         // Capture frame to canvas
         const canvas = document.createElement('canvas');
