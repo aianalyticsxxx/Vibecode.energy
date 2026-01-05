@@ -213,8 +213,9 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
       {/* Live camera preview with overlay showing what will be captured */}
       <div className="relative">
         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+          {/* Show loading spinner until camera is ready (not just loaded) */}
+          {(!isReady || isLoading) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
               <div className="w-8 h-8 border-2 border-vibe-purple border-t-transparent rounded-full animate-spin" />
             </div>
           )}
