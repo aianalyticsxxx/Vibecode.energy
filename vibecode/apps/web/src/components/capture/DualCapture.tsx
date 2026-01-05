@@ -17,7 +17,7 @@ export interface DualCaptureProps {
   className?: string;
 }
 
-type CaptureStep = 'screenshot' | 'selfie' | 'complete';
+type CaptureStep = 'selfie' | 'screenshot' | 'complete';
 
 export function DualCapture({ onCapture, className }: DualCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -25,7 +25,7 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<CaptureStep>('screenshot');
+  const [step, setStep] = useState<CaptureStep>('selfie');
   const [screenshot, setScreenshot] = useState<Blob | null>(null);
   const [selfie, setSelfie] = useState<Blob | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -37,7 +37,7 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
     facingMode
   );
 
-  // Capture screenshot using Screen Capture API
+  // Capture screenshot using Screen Capture API (Step 2)
   const captureScreen = useCallback(async () => {
     try {
       setScreenshotError(null);
@@ -72,9 +72,9 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
         // Convert to blob
         canvas.toBlob((blob) => {
-          if (blob) {
+          if (blob && selfie) {
             setScreenshot(blob);
-            setStep('selfie');
+            onCapture({ selfie, screenshot: blob }); // Complete!
           }
         }, 'image/jpeg', 0.9);
       }
@@ -88,22 +88,22 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
         }
       }
     }
-  }, []);
+  }, [selfie, onCapture]);
 
-  // Handle screenshot file upload as fallback
+  // Handle screenshot file upload as fallback (Step 2)
   const handleScreenshotUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith('image/') && selfie) {
       setScreenshot(file);
-      setStep('selfie');
       setScreenshotError(null);
+      onCapture({ selfie, screenshot: file }); // Complete!
     }
     if (screenshotInputRef.current) {
       screenshotInputRef.current.value = '';
     }
-  }, []);
+  }, [selfie, onCapture]);
 
-  // Capture selfie from camera
+  // Capture selfie from camera (Step 1)
   const captureSelfie = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -128,99 +128,38 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
     setTimeout(() => setIsCapturing(false), 200);
 
     canvas.toBlob((blob) => {
-      if (blob && screenshot) {
+      if (blob) {
         setSelfie(blob);
-        onCapture({ selfie: blob, screenshot });
+        setStep('screenshot'); // Go to screenshot step
       }
     }, 'image/jpeg', 0.9);
-  }, [facingMode, screenshot, onCapture]);
+  }, [facingMode]);
 
-  // Handle selfie file upload as fallback
+  // Handle selfie file upload as fallback (Step 1)
   const handleSelfieUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/') && screenshot) {
+    if (file && file.type.startsWith('image/')) {
       setSelfie(file);
-      onCapture({ selfie: file, screenshot });
+      setStep('screenshot'); // Go to screenshot step
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [screenshot, onCapture]);
+  }, []);
 
   const toggleCamera = useCallback(() => {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   }, []);
 
-  // Step 1: Screenshot capture
-  if (step === 'screenshot') {
-    return (
-      <div className={cn('space-y-4', className)}>
-        <GlassPanel className="p-6 text-center">
-          <div className="text-4xl mb-4">🖥️</div>
-          <h3 className="text-xl font-semibold text-white mb-2">Step 1: Capture Your Screen</h3>
-          <p className="text-white/60 mb-6">
-            Show what you're working on! Share your code, terminal, or IDE.
-          </p>
-
-          {screenshotError && (
-            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
-              <p className="text-red-200 text-sm">{screenshotError}</p>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <Button onClick={captureScreen} variant="gradient">
-              Share Screen
-            </Button>
-            <p className="text-white/40 text-sm">or</p>
-            <Button
-              onClick={() => screenshotInputRef.current?.click()}
-              variant="glass"
-            >
-              Upload Screenshot
-            </Button>
-            <input
-              ref={screenshotInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleScreenshotUpload}
-              className="hidden"
-            />
-          </div>
-        </GlassPanel>
-
-        {/* Progress indicator */}
-        <div className="flex justify-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-vibe-purple" />
-          <div className="w-3 h-3 rounded-full bg-white/20" />
-        </div>
-      </div>
-    );
-  }
-
-  // Step 2: Selfie capture
+  // Step 1: Selfie capture (FIRST)
   if (step === 'selfie') {
     // Show camera error state
     if (cameraError || !hasPermission) {
       return (
         <div className={cn('space-y-4', className)}>
-          {/* Screenshot preview */}
-          {screenshot && (
-            <div className="relative aspect-video rounded-lg overflow-hidden bg-black/50">
-              <img
-                src={URL.createObjectURL(screenshot)}
-                alt="Screenshot"
-                className="w-full h-full object-contain"
-              />
-              <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
-                Screenshot captured
-              </div>
-            </div>
-          )}
-
           <GlassPanel className="p-6 text-center">
             <div className="text-4xl mb-4">📷</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Step 2: Take a Selfie</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Step 1: Take a Selfie</h3>
             <p className="text-white/60 mb-6">
               {cameraError || 'Please allow camera access to take a selfie'}
             </p>
@@ -247,8 +186,8 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
           {/* Progress indicator */}
           <div className="flex justify-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-vibe-purple/50" />
             <div className="w-3 h-3 rounded-full bg-vibe-purple" />
+            <div className="w-3 h-3 rounded-full bg-white/20" />
           </div>
         </div>
       );
@@ -256,22 +195,6 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
     return (
       <div className={cn('space-y-4', className)}>
-        {/* Screenshot preview (small) */}
-        {screenshot && (
-          <div className="relative h-20 rounded-lg overflow-hidden bg-black/50">
-            <img
-              src={URL.createObjectURL(screenshot)}
-              alt="Screenshot"
-              className="w-full h-full object-cover opacity-75"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="bg-black/50 px-2 py-1 rounded text-xs text-white">
-                Screenshot ready
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Selfie camera */}
         <div className="relative">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-black">
@@ -315,7 +238,7 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
             {/* Step indicator overlay */}
             <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
-              Step 2: Selfie
+              Step 1: Selfie
             </div>
           </div>
 
@@ -365,6 +288,69 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
             />
           </div>
         </div>
+
+        {/* Progress indicator */}
+        <div className="flex justify-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-vibe-purple" />
+          <div className="w-3 h-3 rounded-full bg-white/20" />
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Screenshot capture (SECOND)
+  if (step === 'screenshot') {
+    return (
+      <div className={cn('space-y-4', className)}>
+        {/* Selfie preview (small) */}
+        {selfie && (
+          <div className="relative h-20 rounded-lg overflow-hidden bg-black/50">
+            <img
+              src={URL.createObjectURL(selfie)}
+              alt="Selfie"
+              className="w-full h-full object-cover opacity-75"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-black/50 px-2 py-1 rounded text-xs text-white">
+                Selfie ready
+              </span>
+            </div>
+          </div>
+        )}
+
+        <GlassPanel className="p-6 text-center">
+          <div className="text-4xl mb-4">🖥️</div>
+          <h3 className="text-xl font-semibold text-white mb-2">Step 2: Capture Your Screen</h3>
+          <p className="text-white/60 mb-6">
+            Show what you're working on! Share your code, terminal, or IDE.
+          </p>
+
+          {screenshotError && (
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+              <p className="text-red-200 text-sm">{screenshotError}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <Button onClick={captureScreen} variant="gradient">
+              Share Screen
+            </Button>
+            <p className="text-white/40 text-sm">or</p>
+            <Button
+              onClick={() => screenshotInputRef.current?.click()}
+              variant="glass"
+            >
+              Upload Screenshot
+            </Button>
+            <input
+              ref={screenshotInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleScreenshotUpload}
+              className="hidden"
+            />
+          </div>
+        </GlassPanel>
 
         {/* Progress indicator */}
         <div className="flex justify-center gap-2">
