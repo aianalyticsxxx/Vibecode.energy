@@ -17,11 +17,6 @@ import { LateBadge } from '@/components/feed/LateBadge';
 import { EditProfileModal } from '@/components/profile/EditProfileModal';
 import type { User } from '@/lib/auth';
 
-interface ProfileData {
-  user: User;
-  vibes: Vibe[];
-}
-
 export default function ProfilePage() {
   const params = useParams();
   const username = params.username as string;
@@ -29,18 +24,30 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { data, isLoading, error } = useQuery({
+  // Fetch user data
+  const { data: user, isLoading: userLoading, error: userError } = useQuery({
     queryKey: ['profile', username],
     queryFn: async () => {
       const { data, error } = await api.getUser(username);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as ProfileData;
+      if (error) throw new Error(error.message);
+      return data as User;
     },
   });
+
+  // Fetch user vibes
+  const { data: vibesData, isLoading: vibesLoading } = useQuery({
+    queryKey: ['profile-vibes', username],
+    queryFn: async () => {
+      const { data, error } = await api.getUserVibes(username);
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const vibes = vibesData?.items ?? [];
+  const isLoading = userLoading || vibesLoading;
+  const error = userError;
 
   const { streak } = useStreak(username);
   const isOwnProfile = currentUser?.username === username;
@@ -67,7 +74,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (error || !data || !data.user) {
+  if (error || !user) {
     return (
       <GlassPanel className="text-center" padding="lg">
         <div className="text-5xl mb-4">😔</div>
@@ -78,8 +85,6 @@ export default function ProfilePage() {
       </GlassPanel>
     );
   }
-
-  const { user, vibes } = data;
 
   return (
     <CaptureGate>
@@ -234,10 +239,7 @@ export default function ProfilePage() {
             user={user}
             onUpdate={(updatedUser) => {
               // Update the cache with new user data
-              queryClient.setQueryData(['profile', username], (old: ProfileData | undefined) => {
-                if (!old) return old;
-                return { ...old, user: updatedUser };
-              });
+              queryClient.setQueryData(['profile', username], updatedUser);
             }}
           />
         )}

@@ -276,7 +276,10 @@ export const api = {
 
   // Users
   getUser: (username: string) =>
-    get<{ user: import('./auth').User; vibes: Vibe[] }>(`/users/${username}`),
+    get<import('./auth').User>(`/users/${username}`),
+
+  getUserVibes: (username: string, cursor?: string) =>
+    get<PaginatedResponse<Vibe>>(`/users/${username}/vibes${cursor ? `?cursor=${cursor}` : ''}`),
 
   updateProfile: (data: { displayName?: string; bio?: string }) =>
     patch<{ user: import('./auth').User }>('/users/me', data),
