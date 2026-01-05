@@ -1,7 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "installCommand": "bash vercel-install.sh",
-  "buildCommand": "pnpm --filter @vibecode/web build",
-  "outputDirectory": "apps/web/.next"
-}
