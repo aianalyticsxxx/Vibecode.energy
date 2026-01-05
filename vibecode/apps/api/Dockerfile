@@ -1,62 +1,21 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies with npm
+RUN npm ci
 
-# Copy source files
-COPY tsconfig.json ./
-COPY src ./src
+# Copy source code
+COPY . .
 
-# Build TypeScript
-RUN pnpm build
-
-# Production stage
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 fastify
-
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
-
-# Set ownership
-RUN chown -R fastify:nodejs /app
-
-# Switch to non-root user
-USER fastify
+# Build
+RUN npm run build
 
 # Expose port
-EXPOSE 3001
+EXPOSE 4000
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3001
-ENV HOST=0.0.0.0
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
-
-# Start the server
-CMD ["node", "dist/server.js"]
+# Start
+CMD ["npm", "start"]
