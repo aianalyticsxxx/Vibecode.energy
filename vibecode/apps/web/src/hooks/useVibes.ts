@@ -8,6 +8,7 @@ export interface UseVibesReturn {
   vibes: Vibe[];
   isLoading: boolean;
   isLoadingMore: boolean;
+  isRefetching: boolean;
   hasMore: boolean;
   error: string | null;
   loadMore: () => void;
@@ -22,6 +23,7 @@ export function useVibes(): UseVibesReturn {
     data,
     isLoading,
     isFetchingNextPage,
+    isRefetching,
     hasNextPage,
     error,
     fetchNextPage,
@@ -82,6 +84,7 @@ export function useVibes(): UseVibesReturn {
     vibes,
     isLoading,
     isLoadingMore: isFetchingNextPage,
+    isRefetching,
     hasMore: hasNextPage || false,
     error: error instanceof Error ? error.message : null,
     loadMore,

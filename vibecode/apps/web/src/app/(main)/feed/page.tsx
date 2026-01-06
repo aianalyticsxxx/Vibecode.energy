@@ -13,7 +13,7 @@ export default function FeedPage() {
 
   return (
     <CaptureGate>
-      <div className="space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

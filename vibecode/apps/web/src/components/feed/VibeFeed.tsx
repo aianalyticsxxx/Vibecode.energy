@@ -19,6 +19,7 @@ export function VibeFeed({ className }: VibeFeedProps) {
     vibes,
     isLoading,
     isLoadingMore,
+    isRefetching,
     hasMore,
     error,
     loadMore,
@@ -70,7 +71,7 @@ export function VibeFeed({ className }: VibeFeedProps) {
                 <div className={cn("h-3 w-16 rounded", isNeumorphic ? "bg-neumorphic-dark/20" : "bg-white/10")} />
               </div>
             </div>
-            <div className={cn("aspect-square rounded-xl", isNeumorphic ? "bg-neumorphic-dark/20" : "bg-white/10")} />
+            <div className={cn("aspect-video rounded-xl", isNeumorphic ? "bg-neumorphic-dark/20" : "bg-white/10")} />
           </GlassPanel>
         ))}
       </div>
@@ -112,6 +113,34 @@ export function VibeFeed({ className }: VibeFeedProps) {
 
   return (
     <div className={cn('space-y-6', className)}>
+      {/* Refresh button */}
+      <div className="flex justify-center">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => refetch()}
+          disabled={isRefetching}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all",
+            isNeumorphic
+              ? "bg-neumorphic-bg shadow-neumorphic-sm text-neumorphic-text hover:shadow-neumorphic-inset"
+              : "bg-glass-white backdrop-blur-glass border border-glass-border text-white/80 hover:text-white hover:bg-white/20"
+          )}
+        >
+          <motion.svg
+            animate={isRefetching ? { rotate: 360 } : {}}
+            transition={isRefetching ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </motion.svg>
+          {isRefetching ? 'Refreshing...' : 'Refresh feed'}
+        </motion.button>
+      </div>
+
       <AnimatePresence mode="popLayout">
         {vibes.map((vibe, index) => (
           <motion.div

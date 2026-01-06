@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +22,26 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
   const { theme } = useTheme();
   const isNeumorphic = theme === 'neumorphic';
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isExpanded]);
 
   return (
     <GlassPanel className={cn('overflow-hidden', className)} padding="none">
@@ -90,7 +110,7 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-4xl max-h-[90vh] w-full"
+              className="relative max-w-6xl max-h-[90vh] w-full"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
