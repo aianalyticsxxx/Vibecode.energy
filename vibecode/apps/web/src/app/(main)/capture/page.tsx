@@ -117,13 +117,13 @@ export default function CapturePage() {
         // Draw fix code as background (the larger image showing the solution)
         ctx.drawImage(fixCodeImg, 0, 0, canvas.width, canvas.height);
 
-        // Draw issue code in top-left corner (smaller overlay showing the bug)
-        // Issue is smaller (25%), Fix is the main focus
-        const overlaySize = Math.min(canvas.width, canvas.height) * 0.25; // 25% - smaller for the issue
-        const overlayMargin = 20;
+        // Draw issue code in top-left corner (overlay showing the bug)
+        // Issue is 35% of canvas - visible but fix is still the main focus
+        const overlaySize = Math.min(canvas.width, canvas.height) * 0.35; // 35% - bigger to show the bug clearly
+        const overlayMargin = 24;
         const overlayX = overlayMargin;
         const overlayY = overlayMargin;
-        const radius = 12;
+        const radius = 16;
 
         console.log('Drawing issue overlay:', {
           overlaySize,

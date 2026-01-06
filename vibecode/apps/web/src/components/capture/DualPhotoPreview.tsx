@@ -41,12 +41,12 @@ export function DualPhotoPreview({
           />
         </div>
 
-        {/* Issue code overlay (small, in corner) - the bug */}
+        {/* Issue code overlay (bigger, in corner) - the bug */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="absolute top-3 left-3 w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 border-red-500 shadow-lg"
+          className="absolute top-3 left-3 w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-red-500 shadow-lg"
         >
           <img
             src={issueCodeUrl}
