@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Button } from '@/components/ui/Button';
 import type { DualCaptureResult } from './DualCapture';
@@ -20,6 +20,7 @@ export function DualPhotoPreview({
   isPosting,
 }: DualPhotoPreviewProps) {
   const [caption, setCaption] = useState('');
+  const [expandedImage, setExpandedImage] = useState<'issue' | 'fix' | null>(null);
 
   const issueCodeUrl = useMemo(() => URL.createObjectURL(photos.issueCode), [photos.issueCode]);
   const fixCodeUrl = useMemo(() => URL.createObjectURL(photos.fixCode), [photos.fixCode]);
@@ -33,12 +34,21 @@ export function DualPhotoPreview({
       {/* Dual photo display - Bug → Fix style */}
       <div className="relative">
         {/* Main image: Fix code (full width) - the solution */}
-        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
+        <div
+          className="relative aspect-video rounded-2xl overflow-hidden bg-black cursor-pointer group"
+          onClick={() => setExpandedImage('fix')}
+        >
           <img
             src={fixCodeUrl}
             alt="Fixed code"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain transition-transform group-hover:scale-[1.02]"
           />
+          {/* Hover hint */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+              Tap to expand
+            </span>
+          </div>
         </div>
 
         {/* Issue code overlay (bigger, in corner) - the bug */}
@@ -46,17 +56,23 @@ export function DualPhotoPreview({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="absolute top-3 left-3 w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-red-500 shadow-lg"
+          className="absolute top-3 left-3 w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-red-500 shadow-lg cursor-pointer group"
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpandedImage('issue');
+          }}
         >
           <img
             src={issueCodeUrl}
             alt="Bug code"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform group-hover:scale-110"
           />
           {/* Bug indicator */}
           <div className="absolute bottom-0 left-0 right-0 bg-red-500/90 py-0.5 text-center">
             <span className="text-[10px] text-white font-medium">🐛 BUG</span>
           </div>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
         </motion.div>
 
         {/* Labels */}
@@ -66,6 +82,74 @@ export function DualPhotoPreview({
           </span>
         </div>
       </div>
+
+      {/* Expanded image modal */}
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setExpandedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setExpandedImage(null)}
+                className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <span className="text-sm">Close</span>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Image */}
+              <div className={`rounded-2xl overflow-hidden border-4 ${expandedImage === 'issue' ? 'border-red-500' : 'border-green-500'}`}>
+                <img
+                  src={expandedImage === 'issue' ? issueCodeUrl : fixCodeUrl}
+                  alt={expandedImage === 'issue' ? 'Bug code' : 'Fixed code'}
+                  className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                />
+              </div>
+
+              {/* Label */}
+              <div className="absolute bottom-4 left-4">
+                <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                  expandedImage === 'issue'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-green-500 text-white'
+                }`}>
+                  {expandedImage === 'issue' ? '🐛 BUG' : '✨ FIX'}
+                </span>
+              </div>
+
+              {/* Navigation dots */}
+              <div className="flex justify-center gap-2 mt-4">
+                <button
+                  onClick={() => setExpandedImage('issue')}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    expandedImage === 'issue' ? 'bg-red-500' : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+                <button
+                  onClick={() => setExpandedImage('fix')}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    expandedImage === 'fix' ? 'bg-green-500' : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Caption input */}
       <GlassPanel padding="none">
