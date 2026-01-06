@@ -58,7 +58,7 @@ export default function CapturePage() {
       setError(null);
 
       try {
-        // Combine issue code (small overlay) and fix code (large background) into a single image
+        // Combine prompt (small overlay) and result (large background) into a single image
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -67,75 +67,75 @@ export default function CapturePage() {
         }
 
         // Load both images
-        const fixCodeImg = new Image();    // Large background - the fix
-        const issueCodeImg = new Image();  // Small overlay - the issue/bug
+        const resultImg = new Image();    // Large background - the result
+        const promptImg = new Image();    // Small overlay - the prompt
 
-        const fixCodeUrl = URL.createObjectURL(capturedPhotos.fixCode);
-        const issueCodeUrl = URL.createObjectURL(capturedPhotos.issueCode);
+        const resultUrl = URL.createObjectURL(capturedPhotos.result);
+        const promptUrl = URL.createObjectURL(capturedPhotos.prompt);
 
         await Promise.all([
           new Promise<void>((resolve, reject) => {
-            fixCodeImg.onload = () => {
-              console.log('Fix code loaded:', fixCodeImg.width, 'x', fixCodeImg.height);
+            resultImg.onload = () => {
+              console.log('Result loaded:', resultImg.width, 'x', resultImg.height);
               resolve();
             };
-            fixCodeImg.onerror = (e) => {
-              console.error('Fix code load error:', e);
+            resultImg.onerror = (e) => {
+              console.error('Result load error:', e);
               reject(e);
             };
-            fixCodeImg.src = fixCodeUrl;
+            resultImg.src = resultUrl;
           }),
           new Promise<void>((resolve, reject) => {
-            issueCodeImg.onload = () => {
-              console.log('Issue code loaded:', issueCodeImg.width, 'x', issueCodeImg.height);
+            promptImg.onload = () => {
+              console.log('Prompt loaded:', promptImg.width, 'x', promptImg.height);
               resolve();
             };
-            issueCodeImg.onerror = (e) => {
-              console.error('Issue code load error:', e);
+            promptImg.onerror = (e) => {
+              console.error('Prompt load error:', e);
               reject(e);
             };
-            issueCodeImg.src = issueCodeUrl;
+            promptImg.src = promptUrl;
           }),
         ]);
 
         console.log('Both images loaded, creating composite...');
 
         // Validate images have actual dimensions
-        if (issueCodeImg.width === 0 || issueCodeImg.height === 0) {
-          throw new Error('Issue code screenshot has zero dimensions');
+        if (promptImg.width === 0 || promptImg.height === 0) {
+          throw new Error('Prompt screenshot has zero dimensions');
         }
-        if (fixCodeImg.width === 0 || fixCodeImg.height === 0) {
-          throw new Error('Fix code screenshot has zero dimensions');
+        if (resultImg.width === 0 || resultImg.height === 0) {
+          throw new Error('Result screenshot has zero dimensions');
         }
 
-        // Set canvas size to fix code dimensions (or max 1920px)
+        // Set canvas size to result dimensions (or max 1920px)
         const maxWidth = 1920;
-        const scale = Math.min(1, maxWidth / fixCodeImg.width);
-        canvas.width = fixCodeImg.width * scale;
-        canvas.height = fixCodeImg.height * scale;
+        const scale = Math.min(1, maxWidth / resultImg.width);
+        canvas.width = resultImg.width * scale;
+        canvas.height = resultImg.height * scale;
 
-        // Draw fix code as background (the larger image showing the solution)
-        ctx.drawImage(fixCodeImg, 0, 0, canvas.width, canvas.height);
+        // Draw result as background (the larger image showing the output)
+        ctx.drawImage(resultImg, 0, 0, canvas.width, canvas.height);
 
-        // Draw issue code in top-left corner (overlay showing the bug)
-        // Issue is 35% of canvas - visible but fix is still the main focus
-        const overlaySize = Math.min(canvas.width, canvas.height) * 0.35; // 35% - bigger to show the bug clearly
+        // Draw prompt in top-left corner (overlay showing the input)
+        // Prompt is 35% of canvas - visible but result is still the main focus
+        const overlaySize = Math.min(canvas.width, canvas.height) * 0.35; // 35% - bigger to show the prompt clearly
         const overlayMargin = 24;
         const overlayX = overlayMargin;
         const overlayY = overlayMargin;
         const radius = 16;
 
-        console.log('Drawing issue overlay:', {
+        console.log('Drawing prompt overlay:', {
           overlaySize,
           overlayX,
           overlayY,
-          issueImgWidth: issueCodeImg.width,
-          issueImgHeight: issueCodeImg.height,
+          promptImgWidth: promptImg.width,
+          promptImgHeight: promptImg.height,
           canvasWidth: canvas.width,
           canvasHeight: canvas.height
         });
 
-        // Draw shadow behind issue overlay
+        // Draw shadow behind prompt overlay
         ctx.save();
         ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowBlur = 15;
@@ -146,54 +146,53 @@ export default function CapturePage() {
         ctx.fill();
         ctx.restore();
 
-        // Draw issue code with rounded corners
+        // Draw prompt with rounded corners
         ctx.save();
         drawRoundedRect(ctx, overlayX, overlayY, overlaySize, overlaySize, radius);
         ctx.clip();
 
         // Calculate crop to fit square (center crop)
-        const issueAspect = issueCodeImg.width / issueCodeImg.height;
-        let sx = 0, sy = 0, sw = issueCodeImg.width, sh = issueCodeImg.height;
-        if (issueAspect > 1) {
-          sw = issueCodeImg.height;
-          sx = (issueCodeImg.width - sw) / 2;
+        const promptAspect = promptImg.width / promptImg.height;
+        let sx = 0, sy = 0, sw = promptImg.width, sh = promptImg.height;
+        if (promptAspect > 1) {
+          sw = promptImg.height;
+          sx = (promptImg.width - sw) / 2;
         } else {
-          sh = issueCodeImg.width;
-          sy = (issueCodeImg.height - sh) / 2;
+          sh = promptImg.width;
+          sy = (promptImg.height - sh) / 2;
         }
 
-        ctx.drawImage(issueCodeImg, sx, sy, sw, sh, overlayX, overlayY, overlaySize, overlaySize);
-        console.log('Issue code drawn to canvas at', overlayX, overlayY, 'size', overlaySize);
+        ctx.drawImage(promptImg, sx, sy, sw, sh, overlayX, overlayY, overlaySize, overlaySize);
+        console.log('Prompt drawn to canvas at', overlayX, overlayY, 'size', overlaySize);
         ctx.restore();
 
-        // Add red border around issue (to indicate it's the bug)
-        ctx.strokeStyle = '#ef4444'; // red-500
+        // Add purple border around prompt (to indicate it's the input)
+        ctx.strokeStyle = '#9333ea'; // purple-600 (vibe-purple)
         ctx.lineWidth = 4;
         drawRoundedRect(ctx, overlayX, overlayY, overlaySize, overlaySize, radius);
         ctx.stroke();
 
-        // Add small "BUG" label
+        // Add small "PROMPT" label
         ctx.save();
-        ctx.fillStyle = '#ef4444';
         ctx.font = 'bold 14px system-ui, sans-serif';
-        const labelWidth = ctx.measureText('🐛 BUG').width + 12;
+        const labelWidth = ctx.measureText('💬 PROMPT').width + 12;
         const labelHeight = 22;
         const labelX = overlayX;
         const labelY = overlayY + overlaySize + 6;
 
         // Label background
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.fillStyle = 'rgba(147, 51, 234, 0.9)'; // purple-600
         drawRoundedRect(ctx, labelX, labelY, labelWidth, labelHeight, 6);
         ctx.fill();
 
         // Label text
         ctx.fillStyle = 'white';
-        ctx.fillText('🐛 BUG', labelX + 6, labelY + 16);
+        ctx.fillText('💬 PROMPT', labelX + 6, labelY + 16);
         ctx.restore();
 
         // Clean up URLs
-        URL.revokeObjectURL(fixCodeUrl);
-        URL.revokeObjectURL(issueCodeUrl);
+        URL.revokeObjectURL(resultUrl);
+        URL.revokeObjectURL(promptUrl);
 
         console.log('Canvas composite created:', canvas.width, 'x', canvas.height);
 
@@ -302,12 +301,12 @@ export default function CapturePage() {
         className="text-center"
       >
         <h1 className="text-2xl font-bold text-white mb-2">
-          Share your fix
+          Share your vibe
         </h1>
         <p className="text-white/60">
           {capturedPhotos
-            ? 'Nice fix! Add a caption or retake.'
-            : 'Capture bug → then the fix'}
+            ? 'Nice result! Add a caption or retake.'
+            : 'Capture prompt → then the result'}
         </p>
       </motion.div>
 
@@ -363,7 +362,7 @@ export default function CapturePage() {
           className="text-center"
         >
           <p className="text-white/40 text-sm">
-            Show the bug 🐛 → then your fix ✨
+            Show the prompt 💬 → then the result ✨
           </p>
         </motion.div>
       )}

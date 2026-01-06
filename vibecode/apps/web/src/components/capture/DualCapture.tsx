@@ -7,8 +7,8 @@ import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Button } from '@/components/ui/Button';
 
 export interface DualCaptureResult {
-  issueCode: Blob;  // First screenshot - the bug/issue (shown smaller)
-  fixCode: Blob;    // Second screenshot - the fix (shown larger as background)
+  prompt: Blob;   // First screenshot - the prompt/input (shown smaller)
+  result: Blob;   // Second screenshot - the result/output (shown larger as background)
 }
 
 export interface DualCaptureProps {
@@ -16,14 +16,14 @@ export interface DualCaptureProps {
   className?: string;
 }
 
-type CaptureStep = 'ready' | 'capturing_issue' | 'issue_captured' | 'capturing_fix' | 'complete';
+type CaptureStep = 'ready' | 'capturing_prompt' | 'prompt_captured' | 'capturing_result' | 'complete';
 
 export function DualCapture({ onCapture, className }: DualCaptureProps) {
   const [step, setStep] = useState<CaptureStep>('ready');
   const [isCapturing, setIsCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [issueCodeBlob, setIssueCodeBlob] = useState<Blob | null>(null);
-  const [issuePreviewUrl, setIssuePreviewUrl] = useState<string | null>(null);
+  const [promptBlob, setPromptBlob] = useState<Blob | null>(null);
+  const [promptPreviewUrl, setPromptPreviewUrl] = useState<string | null>(null);
 
   // Capture screenshot using Screen Capture API
   const captureScreenshot = useCallback((label: string): Promise<Blob | null> => {
@@ -73,52 +73,52 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
     });
   }, []);
 
-  // Step 1: Capture the issue/bug code screenshot
-  const captureIssueCode = useCallback(async () => {
+  // Step 1: Capture the prompt screenshot
+  const capturePrompt = useCallback(async () => {
     setError(null);
-    setStep('capturing_issue');
+    setStep('capturing_prompt');
     setIsCapturing(true);
 
     try {
-      const issueBlob = await captureScreenshot('Issue code');
+      const blob = await captureScreenshot('Prompt');
 
-      if (!issueBlob) {
+      if (!blob) {
         setError('Screen sharing was denied. Please allow screen capture.');
         setStep('ready');
         setIsCapturing(false);
         return;
       }
 
-      // Store the issue code and show preview
-      setIssueCodeBlob(issueBlob);
-      setIssuePreviewUrl(URL.createObjectURL(issueBlob));
-      setStep('issue_captured');
+      // Store the prompt and show preview
+      setPromptBlob(blob);
+      setPromptPreviewUrl(URL.createObjectURL(blob));
+      setStep('prompt_captured');
       setIsCapturing(false);
     } catch (err) {
-      console.error('Issue capture error:', err);
-      setError('Failed to capture issue code. Please try again.');
+      console.error('Prompt capture error:', err);
+      setError('Failed to capture prompt. Please try again.');
       setStep('ready');
       setIsCapturing(false);
     }
   }, [captureScreenshot]);
 
-  // Step 2: Capture the fix code screenshot
-  const captureFixCode = useCallback(async () => {
-    if (!issueCodeBlob) {
-      setError('Please capture the issue code first.');
+  // Step 2: Capture the result screenshot
+  const captureResult = useCallback(async () => {
+    if (!promptBlob) {
+      setError('Please capture the prompt first.');
       return;
     }
 
     setError(null);
-    setStep('capturing_fix');
+    setStep('capturing_result');
     setIsCapturing(true);
 
     try {
-      const fixBlob = await captureScreenshot('Fix code');
+      const resultBlob = await captureScreenshot('Result');
 
-      if (!fixBlob) {
+      if (!resultBlob) {
         setError('Screen sharing was denied. Please allow screen capture.');
-        setStep('issue_captured');
+        setStep('prompt_captured');
         setIsCapturing(false);
         return;
       }
@@ -127,26 +127,26 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
       setTimeout(() => setIsCapturing(false), 200);
 
       // Success! Call onCapture with both screenshots
-      onCapture({ issueCode: issueCodeBlob, fixCode: fixBlob });
+      onCapture({ prompt: promptBlob, result: resultBlob });
       setStep('complete');
     } catch (err) {
-      console.error('Fix capture error:', err);
-      setError('Failed to capture fix code. Please try again.');
-      setStep('issue_captured');
+      console.error('Result capture error:', err);
+      setError('Failed to capture result. Please try again.');
+      setStep('prompt_captured');
       setIsCapturing(false);
     }
-  }, [captureScreenshot, issueCodeBlob, onCapture]);
+  }, [captureScreenshot, promptBlob, onCapture]);
 
   // Reset to start over
   const resetCapture = useCallback(() => {
-    if (issuePreviewUrl) {
-      URL.revokeObjectURL(issuePreviewUrl);
+    if (promptPreviewUrl) {
+      URL.revokeObjectURL(promptPreviewUrl);
     }
-    setIssueCodeBlob(null);
-    setIssuePreviewUrl(null);
+    setPromptBlob(null);
+    setPromptPreviewUrl(null);
     setStep('ready');
     setError(null);
-  }, [issuePreviewUrl]);
+  }, [promptPreviewUrl]);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -154,27 +154,27 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
       <div className="flex items-center justify-center gap-3 mb-4">
         <div className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all',
-          step === 'ready' || step === 'capturing_issue'
+          step === 'ready' || step === 'capturing_prompt'
             ? 'bg-vibe-purple/30 text-vibe-purple-light border border-vibe-purple/50'
-            : step === 'issue_captured' || step === 'capturing_fix' || step === 'complete'
+            : step === 'prompt_captured' || step === 'capturing_result' || step === 'complete'
               ? 'bg-green-500/30 text-green-300 border border-green-500/50'
               : 'bg-white/10 text-white/50'
         )}>
           <span className="w-5 h-5 rounded-full bg-current/30 flex items-center justify-center text-xs">1</span>
-          <span>Issue</span>
-          {(step === 'issue_captured' || step === 'capturing_fix' || step === 'complete') && <span>✓</span>}
+          <span>Prompt</span>
+          {(step === 'prompt_captured' || step === 'capturing_result' || step === 'complete') && <span>✓</span>}
         </div>
         <div className="w-8 h-0.5 bg-white/20" />
         <div className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all',
-          step === 'issue_captured' || step === 'capturing_fix'
+          step === 'prompt_captured' || step === 'capturing_result'
             ? 'bg-vibe-purple/30 text-vibe-purple-light border border-vibe-purple/50'
             : step === 'complete'
               ? 'bg-green-500/30 text-green-300 border border-green-500/50'
               : 'bg-white/10 text-white/50'
         )}>
           <span className="w-5 h-5 rounded-full bg-current/30 flex items-center justify-center text-xs">2</span>
-          <span>Fix</span>
+          <span>Result</span>
           {step === 'complete' && <span>✓</span>}
         </div>
       </div>
@@ -182,18 +182,18 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
       <div className="relative">
         {/* Preview area */}
         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-900 border border-white/10">
-          {/* Issue code preview (when captured) */}
-          {issuePreviewUrl && (
+          {/* Prompt preview (when captured) */}
+          {promptPreviewUrl && (
             <div className="absolute inset-0">
               <img
-                src={issuePreviewUrl}
-                alt="Issue code"
+                src={promptPreviewUrl}
+                alt="Prompt"
                 className="w-full h-full object-contain"
               />
               {/* Overlay showing this will be the small one */}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <div className="bg-black/70 px-4 py-2 rounded-lg text-center">
-                  <p className="text-white/80 text-sm">Issue captured</p>
+                  <p className="text-white/80 text-sm">Prompt captured</p>
                   <p className="text-white/50 text-xs">This will be the small overlay</p>
                 </div>
               </div>
@@ -201,11 +201,11 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
           )}
 
           {/* Empty state */}
-          {!issuePreviewUrl && (
+          {!promptPreviewUrl && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-6xl mb-4">🐛</div>
+              <div className="text-6xl mb-4">💬</div>
               <p className="text-white/60 text-center px-4">
-                Capture a screenshot of your <span className="text-red-400 font-semibold">buggy code</span>
+                Capture a screenshot of your <span className="text-vibe-purple-light font-semibold">prompt</span>
               </p>
             </div>
           )}
@@ -235,26 +235,26 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
           <div className="absolute top-2 left-2 bg-black/50 px-3 py-1.5 rounded-full flex items-center gap-2">
             {step === 'ready' && (
               <>
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-xs text-white">Step 1: Capture Issue</span>
+                <span className="w-2 h-2 rounded-full bg-vibe-purple" />
+                <span className="text-xs text-white">Step 1: Capture Prompt</span>
               </>
             )}
-            {step === 'capturing_issue' && (
+            {step === 'capturing_prompt' && (
               <>
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
                 <span className="text-xs text-white">Capturing...</span>
               </>
             )}
-            {step === 'issue_captured' && (
+            {step === 'prompt_captured' && (
               <>
                 <span className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-xs text-white">Step 2: Capture Fix</span>
+                <span className="text-xs text-white">Step 2: Capture Result</span>
               </>
             )}
-            {step === 'capturing_fix' && (
+            {step === 'capturing_result' && (
               <>
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                <span className="text-xs text-white">Capturing fix...</span>
+                <span className="text-xs text-white">Capturing result...</span>
               </>
             )}
           </div>
@@ -273,8 +273,8 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-6 mt-6">
-          {/* Reset button (when issue is captured) */}
-          {step === 'issue_captured' && (
+          {/* Reset button (when prompt is captured) */}
+          {step === 'prompt_captured' && (
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={resetCapture}
@@ -287,12 +287,12 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
           )}
 
           {/* Spacer when no reset button */}
-          {step !== 'issue_captured' && <div className="w-12 h-12" />}
+          {step !== 'prompt_captured' && <div className="w-12 h-12" />}
 
           {/* Main capture button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={step === 'issue_captured' ? captureFixCode : captureIssueCode}
+            onClick={step === 'prompt_captured' ? captureResult : capturePrompt}
             disabled={isCapturing}
             className="relative w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-glow disabled:opacity-50"
           >
@@ -305,12 +305,12 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
                 <motion.div
                   className={cn(
                     "w-16 h-16 rounded-full",
-                    step === 'issue_captured' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-orange-500'
+                    step === 'prompt_captured' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-vibe'
                   )}
                   whileHover={{ scale: 1.05 }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl">{step === 'issue_captured' ? '✨' : '🐛'}</span>
+                  <span className="text-2xl">{step === 'prompt_captured' ? '✨' : '💬'}</span>
                 </div>
               </>
             )}
@@ -322,10 +322,10 @@ export function DualCapture({ onCapture, className }: DualCaptureProps) {
 
         {/* Instruction text */}
         <p className="text-center text-white/50 text-sm mt-4">
-          {step === 'ready' && 'Tap to capture your buggy code screenshot'}
-          {step === 'capturing_issue' && 'Select the window with your issue...'}
-          {step === 'issue_captured' && 'Now capture your fixed code!'}
-          {step === 'capturing_fix' && 'Select the window with your fix...'}
+          {step === 'ready' && 'Tap to capture your prompt screenshot'}
+          {step === 'capturing_prompt' && 'Select the window with your prompt...'}
+          {step === 'prompt_captured' && 'Now capture the result!'}
+          {step === 'capturing_result' && 'Select the window with the result...'}
         </p>
       </div>
     </div>

@@ -20,10 +20,10 @@ export function DualPhotoPreview({
   isPosting,
 }: DualPhotoPreviewProps) {
   const [caption, setCaption] = useState('');
-  const [expandedImage, setExpandedImage] = useState<'issue' | 'fix' | null>(null);
+  const [expandedImage, setExpandedImage] = useState<'prompt' | 'result' | null>(null);
 
-  const issueCodeUrl = useMemo(() => URL.createObjectURL(photos.issueCode), [photos.issueCode]);
-  const fixCodeUrl = useMemo(() => URL.createObjectURL(photos.fixCode), [photos.fixCode]);
+  const promptUrl = useMemo(() => URL.createObjectURL(photos.prompt), [photos.prompt]);
+  const resultUrl = useMemo(() => URL.createObjectURL(photos.result), [photos.result]);
 
   const handlePost = () => {
     onPost(caption);
@@ -31,16 +31,16 @@ export function DualPhotoPreview({
 
   return (
     <div className="space-y-4">
-      {/* Dual photo display - Bug → Fix style */}
+      {/* Dual photo display - Prompt → Result style */}
       <div className="relative">
-        {/* Main image: Fix code (full width) - the solution */}
+        {/* Main image: Result (full width) - the output */}
         <div
           className="relative aspect-video rounded-2xl overflow-hidden bg-black cursor-pointer group"
-          onClick={() => setExpandedImage('fix')}
+          onClick={() => setExpandedImage('result')}
         >
           <img
-            src={fixCodeUrl}
-            alt="Fixed code"
+            src={resultUrl}
+            alt="Result"
             className="w-full h-full object-contain transition-transform group-hover:scale-[1.02]"
           />
           {/* Hover hint */}
@@ -51,25 +51,25 @@ export function DualPhotoPreview({
           </div>
         </div>
 
-        {/* Issue code overlay (bigger, in corner) - the bug */}
+        {/* Prompt overlay (bigger, in corner) - the input */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="absolute top-3 left-3 w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-red-500 shadow-lg cursor-pointer group"
+          className="absolute top-3 left-3 w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-vibe-purple shadow-lg cursor-pointer group"
           onClick={(e) => {
             e.stopPropagation();
-            setExpandedImage('issue');
+            setExpandedImage('prompt');
           }}
         >
           <img
-            src={issueCodeUrl}
-            alt="Bug code"
+            src={promptUrl}
+            alt="Prompt"
             className="w-full h-full object-cover transition-transform group-hover:scale-110"
           />
-          {/* Bug indicator */}
-          <div className="absolute bottom-0 left-0 right-0 bg-red-500/90 py-0.5 text-center">
-            <span className="text-[10px] text-white font-medium">🐛 BUG</span>
+          {/* Prompt indicator */}
+          <div className="absolute bottom-0 left-0 right-0 bg-vibe-purple/90 py-0.5 text-center">
+            <span className="text-[10px] text-white font-medium">💬 PROMPT</span>
           </div>
           {/* Hover overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
@@ -78,7 +78,7 @@ export function DualPhotoPreview({
         {/* Labels */}
         <div className="absolute bottom-3 right-3 flex gap-2">
           <span className="bg-green-500/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-medium">
-            ✨ FIX
+            ✨ RESULT
           </span>
         </div>
       </div>
@@ -112,10 +112,10 @@ export function DualPhotoPreview({
               </button>
 
               {/* Image */}
-              <div className={`rounded-2xl overflow-hidden border-4 ${expandedImage === 'issue' ? 'border-red-500' : 'border-green-500'}`}>
+              <div className={`rounded-2xl overflow-hidden border-4 ${expandedImage === 'prompt' ? 'border-vibe-purple' : 'border-green-500'}`}>
                 <img
-                  src={expandedImage === 'issue' ? issueCodeUrl : fixCodeUrl}
-                  alt={expandedImage === 'issue' ? 'Bug code' : 'Fixed code'}
+                  src={expandedImage === 'prompt' ? promptUrl : resultUrl}
+                  alt={expandedImage === 'prompt' ? 'Prompt' : 'Result'}
                   className="w-full h-auto max-h-[80vh] object-contain bg-black"
                 />
               </div>
@@ -123,26 +123,26 @@ export function DualPhotoPreview({
               {/* Label */}
               <div className="absolute bottom-4 left-4">
                 <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                  expandedImage === 'issue'
-                    ? 'bg-red-500 text-white'
+                  expandedImage === 'prompt'
+                    ? 'bg-vibe-purple text-white'
                     : 'bg-green-500 text-white'
                 }`}>
-                  {expandedImage === 'issue' ? '🐛 BUG' : '✨ FIX'}
+                  {expandedImage === 'prompt' ? '💬 PROMPT' : '✨ RESULT'}
                 </span>
               </div>
 
               {/* Navigation dots */}
               <div className="flex justify-center gap-2 mt-4">
                 <button
-                  onClick={() => setExpandedImage('issue')}
+                  onClick={() => setExpandedImage('prompt')}
                   className={`w-3 h-3 rounded-full transition-colors ${
-                    expandedImage === 'issue' ? 'bg-red-500' : 'bg-white/30 hover:bg-white/50'
+                    expandedImage === 'prompt' ? 'bg-vibe-purple' : 'bg-white/30 hover:bg-white/50'
                   }`}
                 />
                 <button
-                  onClick={() => setExpandedImage('fix')}
+                  onClick={() => setExpandedImage('result')}
                   className={`w-3 h-3 rounded-full transition-colors ${
-                    expandedImage === 'fix' ? 'bg-green-500' : 'bg-white/30 hover:bg-white/50'
+                    expandedImage === 'result' ? 'bg-green-500' : 'bg-white/30 hover:bg-white/50'
                   }`}
                 />
               </div>
@@ -156,7 +156,7 @@ export function DualPhotoPreview({
         <textarea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
-          placeholder="What did you fix?"
+          placeholder="What did you create?"
           maxLength={280}
           rows={3}
           className="w-full bg-transparent border-none resize-none p-4 text-white placeholder-white/40 focus:outline-none focus:ring-0"
@@ -166,10 +166,10 @@ export function DualPhotoPreview({
           <div className="flex gap-2">
             {/* Emoji suggestions */}
             <button
-              onClick={() => setCaption(caption + ' 🐛')}
+              onClick={() => setCaption(caption + ' 💬')}
               className="text-lg hover:scale-110 transition-transform"
             >
-              🐛
+              💬
             </button>
             <button
               onClick={() => setCaption(caption + ' ✨')}
@@ -215,7 +215,7 @@ export function DualPhotoPreview({
               Posting...
             </span>
           ) : (
-            'Share Fix ✨'
+            'Share Result ✨'
           )}
         </Button>
       </div>
