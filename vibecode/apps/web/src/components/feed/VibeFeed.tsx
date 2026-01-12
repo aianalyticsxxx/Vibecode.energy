@@ -4,17 +4,25 @@ import { useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useVibes } from '@/hooks/useVibes';
+import { useFollowingFeed } from '@/hooks/useFollowingFeed';
 import { VibeCard } from './VibeCard';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { useTheme } from '@/hooks/useTheme';
 
 export interface VibeFeedProps {
   className?: string;
+  feedType?: 'everyone' | 'following';
 }
 
-export function VibeFeed({ className }: VibeFeedProps) {
+export function VibeFeed({ className, feedType = 'everyone' }: VibeFeedProps) {
   const { theme } = useTheme();
   const isNeumorphic = theme === 'neumorphic';
+
+  const everyoneFeed = useVibes();
+  const followingFeed = useFollowingFeed();
+
+  const activeFeed = feedType === 'following' ? followingFeed : everyoneFeed;
+
   const {
     vibes,
     isLoading,
@@ -24,7 +32,7 @@ export function VibeFeed({ className }: VibeFeedProps) {
     error,
     loadMore,
     refetch,
-  } = useVibes();
+  } = activeFeed;
 
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -103,9 +111,15 @@ export function VibeFeed({ className }: VibeFeedProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="text-4xl mb-4">✨</div>
-          <h3 className={cn("text-xl font-semibold mb-2", isNeumorphic ? "text-neumorphic-text" : "text-white")}>No vibes yet</h3>
-          <p className={isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/60"}>Be the first to share your vibe!</p>
+          <div className="text-4xl mb-4">{feedType === 'following' ? '👋' : '✨'}</div>
+          <h3 className={cn("text-xl font-semibold mb-2", isNeumorphic ? "text-neumorphic-text" : "text-white")}>
+            {feedType === 'following' ? 'No vibes from friends yet' : 'No vibes yet'}
+          </h3>
+          <p className={isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/60"}>
+            {feedType === 'following'
+              ? 'Follow some vibers to see their posts here!'
+              : 'Be the first to share your vibe!'}
+          </p>
         </motion.div>
       </GlassPanel>
     );

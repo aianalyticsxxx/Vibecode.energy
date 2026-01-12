@@ -22,12 +22,54 @@ export interface Vibe {
   hasSparkled: boolean;
   isLate: boolean;
   lateByMinutes: number;
+  commentCount: number;
   user: {
     id: string;
     username: string;
     displayName: string;
     avatarUrl: string | null;
   };
+}
+
+export interface Comment {
+  id: string;
+  vibeId: string;
+  content: string;
+  createdAt: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+}
+
+export interface CommentsResponse {
+  comments: Comment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total: number;
+}
+
+export interface FollowUser {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+}
+
+export interface FollowListResponse {
+  users: FollowUser[];
+  nextCursor?: string;
+  hasMore: boolean;
+}
+
+export interface OnlineUser {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  lastActiveAt: string;
 }
 
 export interface VibecheckStatus {
@@ -312,4 +354,39 @@ export const api = {
 
   // Daily vibe check
   getDailyVibeStatus: () => get<{ hasPostedToday: boolean; vibe: Vibe | null }>('/vibes/today'),
+
+  // Following feed
+  getFollowingFeed: (cursor?: string) =>
+    get<VibesFeedResponse>(`/vibes/following${cursor ? `?cursor=${cursor}` : ''}`),
+
+  // Follow system
+  followUser: (userId: string) =>
+    post<{ success: boolean; followerCount: number }>(`/users/${userId}/follow`),
+
+  unfollowUser: (userId: string) =>
+    del<{ success: boolean; followerCount: number }>(`/users/${userId}/follow`),
+
+  getFollowStatus: (userId: string) =>
+    get<{ isFollowing: boolean; followerCount: number; followingCount: number }>(`/users/${userId}/follow/status`),
+
+  getFollowers: (userId: string, cursor?: string) =>
+    get<FollowListResponse>(`/users/${userId}/followers${cursor ? `?cursor=${cursor}` : ''}`),
+
+  getFollowing: (userId: string, cursor?: string) =>
+    get<FollowListResponse>(`/users/${userId}/following${cursor ? `?cursor=${cursor}` : ''}`),
+
+  // Comments
+  getComments: (vibeId: string, cursor?: string) =>
+    get<CommentsResponse>(`/vibes/${vibeId}/comments${cursor ? `?cursor=${cursor}` : ''}`),
+
+  addComment: (vibeId: string, content: string) =>
+    post<{ comment: Comment; commentCount: number }>(`/vibes/${vibeId}/comments`, { content }),
+
+  deleteComment: (vibeId: string, commentId: string) =>
+    del<{ success: boolean; commentCount: number }>(`/vibes/${vibeId}/comments/${commentId}`),
+
+  // Presence
+  updatePresence: () => patch<{ success: boolean }>('/users/me/presence'),
+
+  getOnlineFriends: () => get<{ users: OnlineUser[] }>('/users/me/following/online'),
 };

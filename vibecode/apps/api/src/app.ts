@@ -12,7 +12,10 @@ import { s3Plugin } from './plugins/s3.js';
 import { authRoutes } from './routes/auth/index.js';
 import { vibeRoutes } from './routes/vibes/index.js';
 import { reactionRoutes } from './routes/reactions/index.js';
+import { commentRoutes } from './routes/vibes/comments.js';
 import { userRoutes } from './routes/users/index.js';
+import { followRoutes } from './routes/users/follow.js';
+import { presenceRoutes } from './routes/users/presence.js';
 import { uploadRoutes } from './routes/upload/index.js';
 import { vibecheckRoutes } from './routes/vibecheck/index.js';
 
@@ -84,7 +87,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(vibeRoutes, { prefix: '/vibes' });
   await app.register(reactionRoutes, { prefix: '/vibes' });
+  await app.register(commentRoutes, { prefix: '/vibes' });
   await app.register(userRoutes, { prefix: '/users' });
+  await app.register(followRoutes, { prefix: '/users' });
+  await app.register(presenceRoutes, { prefix: '/users' });
   await app.register(uploadRoutes, { prefix: '/upload' });
   await app.register(vibecheckRoutes, { prefix: '/vibecheck' });
 

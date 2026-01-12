@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { VibecheckService } from './vibecheck.service.js';
 import { StreakService } from './streak.service.js';
+import { FollowService } from './follow.service.js';
 
 interface CreateVibeData {
   userId: string;
@@ -35,6 +36,7 @@ interface Vibe {
   hasSparkled: boolean;
   isLate: boolean;
   lateByMinutes: number;
+  commentCount: number;
 }
 
 interface FeedResult {
@@ -46,10 +48,12 @@ interface FeedResult {
 export class VibeService {
   private vibecheckService: VibecheckService;
   private streakService: StreakService;
+  private followService: FollowService;
 
   constructor(private fastify: FastifyInstance) {
     this.vibecheckService = new VibecheckService(fastify);
     this.streakService = new StreakService(fastify);
+    this.followService = new FollowService(fastify);
   }
 
   /**
@@ -92,6 +96,7 @@ export class VibeService {
         u.display_name,
         u.avatar_url,
         COUNT(r.id) as reaction_count,
+        (SELECT COUNT(*) FROM comments c WHERE c.vibe_id = v.id) as comment_count,
         ${hasReactedClause}
       FROM vibes v
       JOIN users u ON v.user_id = u.id
@@ -137,6 +142,7 @@ export class VibeService {
         u.display_name,
         u.avatar_url,
         COUNT(r.id) as reaction_count,
+        (SELECT COUNT(*) FROM comments c WHERE c.vibe_id = v.id) as comment_count,
         false as has_reacted
       FROM vibes v
       JOIN users u ON v.user_id = u.id
@@ -176,6 +182,7 @@ export class VibeService {
         u.display_name,
         u.avatar_url,
         COUNT(r.id) as reaction_count,
+        (SELECT COUNT(*) FROM comments c WHERE c.vibe_id = v.id) as comment_count,
         ${hasReactedClause}
       FROM vibes v
       JOIN users u ON v.user_id = u.id
@@ -293,6 +300,7 @@ export class VibeService {
         u.display_name,
         u.avatar_url,
         COUNT(r.id) as reaction_count,
+        (SELECT COUNT(*) FROM comments c WHERE c.vibe_id = v.id) as comment_count,
         ${hasReactedClause}
       FROM vibes v
       JOIN users u ON v.user_id = u.id
@@ -332,6 +340,87 @@ export class VibeService {
   }
 
   /**
+   * Get feed of vibes from users the current user follows
+   */
+  async getFollowingFeed(options: FeedOptions): Promise<FeedResult> {
+    const { cursor, limit, currentUserId } = options;
+
+    if (!currentUserId) {
+      return { vibes: [], hasMore: false };
+    }
+
+    // Get list of users we follow
+    const followingIds = await this.followService.getFollowingIds(currentUserId);
+
+    if (followingIds.length === 0) {
+      return { vibes: [], hasMore: false };
+    }
+
+    const params: (string | number | string[])[] = [];
+    let paramIndex = 1;
+
+    // Add following IDs as array parameter
+    params.push(followingIds);
+    const followingParam = paramIndex;
+    paramIndex++;
+
+    let cursorCondition = '';
+    if (cursor) {
+      cursorCondition = `AND v.created_at < $${paramIndex}`;
+      params.push(cursor);
+      paramIndex++;
+    }
+
+    const limitParam = paramIndex;
+    params.push(limit + 1);
+    paramIndex++;
+
+    const hasReactedClause = `EXISTS(SELECT 1 FROM reactions WHERE vibe_id = v.id AND user_id = $${paramIndex}) as has_reacted`;
+    params.push(currentUserId);
+
+    const query = `
+      SELECT
+        v.id,
+        v.image_url,
+        v.caption,
+        v.vibe_date,
+        v.created_at,
+        v.is_late,
+        v.late_by_minutes,
+        u.id as author_id,
+        u.username,
+        u.display_name,
+        u.avatar_url,
+        COUNT(r.id) as reaction_count,
+        (SELECT COUNT(*) FROM comments c WHERE c.vibe_id = v.id) as comment_count,
+        ${hasReactedClause}
+      FROM vibes v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN reactions r ON r.vibe_id = v.id
+      WHERE v.user_id = ANY($${followingParam}::uuid[])
+      ${cursorCondition}
+      GROUP BY v.id, u.id
+      ORDER BY v.created_at DESC
+      LIMIT $${limitParam}
+    `;
+
+    const result = await this.fastify.db.query(query, params);
+
+    const hasMore = result.rows.length > limit;
+    const vibes = result.rows.slice(0, limit).map(this.mapVibeRow.bind(this));
+    const lastVibe = vibes[vibes.length - 1];
+    const nextCursor = hasMore && lastVibe
+      ? lastVibe.createdAt.toISOString()
+      : undefined;
+
+    return {
+      vibes,
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  /**
    * Map database row to Vibe object
    */
   private mapVibeRow(row: Record<string, unknown>): Vibe {
@@ -353,6 +442,7 @@ export class VibeService {
       hasSparkled: row.has_reacted as boolean,
       isLate: row.is_late as boolean || false,
       lateByMinutes: (row.late_by_minutes as number) || 0,
+      commentCount: parseInt(row.comment_count as string, 10) || 0,
     };
   }
 }

@@ -73,6 +73,22 @@ export const vibeRoutes: FastifyPluginAsync = async (fastify) => {
     return vibes;
   });
 
+  // GET /vibes/following - Feed of vibes from followed users
+  fastify.get<{ Querystring: GetVibesQuery }>('/following', {
+    preHandler: [fastify.authenticate],
+  }, async (request, _reply) => {
+    const { cursor, limit = 20 } = request.query;
+    const { userId } = request.user;
+
+    const vibes = await vibeService.getFollowingFeed({
+      cursor,
+      limit: Math.min(limit, 50),
+      currentUserId: userId,
+    });
+
+    return vibes;
+  });
+
   // GET /vibes/:id - Get single vibe
   fastify.get<{ Params: VibeParams }>('/:id', {
     preHandler: [fastify.optionalAuth],

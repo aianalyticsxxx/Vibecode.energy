@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { VibeButton } from './VibeButton';
 import { LateBadge } from './LateBadge';
+import { FollowButton } from './FollowButton';
 import { PhotoReactionsRow } from '@/components/reactions/PhotoReactionsRow';
 import { useTheme } from '@/hooks/useTheme';
 import type { Vibe } from '@/lib/api';
@@ -20,6 +22,7 @@ export interface VibeCardProps {
 
 export function VibeCard({ vibe, className }: VibeCardProps) {
   const { theme } = useTheme();
+  const router = useRouter();
   const isNeumorphic = theme === 'neumorphic';
   // null = closed, 'prompt' = zoomed to prompt overlay, 'result' = full image view
   const [expandedView, setExpandedView] = useState<'prompt' | 'result' | null>(null);
@@ -57,15 +60,18 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
           />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link
-            href={`/profile/${vibe.user.username}`}
-            className={cn(
-              "font-semibold hover:text-vibe-purple-light transition-colors block truncate",
-              isNeumorphic ? "text-neumorphic-text" : "text-white"
-            )}
-          >
-            {vibe.user.displayName}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/profile/${vibe.user.username}`}
+              className={cn(
+                "font-semibold hover:text-vibe-purple-light transition-colors truncate",
+                isNeumorphic ? "text-neumorphic-text" : "text-white"
+              )}
+            >
+              {vibe.user.displayName}
+            </Link>
+            <FollowButton userId={vibe.user.id} size="sm" />
+          </div>
           <div className={cn("text-sm flex items-center gap-2 flex-wrap", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>
             <span>@{vibe.user.username} · {formatRelativeTime(vibe.createdAt)}</span>
             {vibe.isLate && vibe.lateByMinutes > 0 && (
@@ -240,11 +246,32 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <VibeButton
-            vibeId={vibe.id}
-            sparkleCount={vibe.sparkleCount}
-            hasSparkled={vibe.hasSparkled}
-          />
+          <div className="flex items-center gap-4">
+            <VibeButton
+              vibeId={vibe.id}
+              sparkleCount={vibe.sparkleCount}
+              hasSparkled={vibe.hasSparkled}
+            />
+
+            {/* Comment button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => router.push(`/vibe/${vibe.id}/comments`)}
+              className={cn(
+                "flex items-center gap-1.5 p-2 transition-colors",
+                isNeumorphic
+                  ? "text-neumorphic-text-secondary hover:text-neumorphic-text"
+                  : "text-white/50 hover:text-white"
+              )}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {(vibe.commentCount ?? 0) > 0 && (
+                <span className="text-sm font-medium">{vibe.commentCount}</span>
+              )}
+            </motion.button>
+          </div>
 
           {/* Share button */}
           <motion.button
