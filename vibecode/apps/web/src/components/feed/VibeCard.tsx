@@ -140,7 +140,7 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-6xl max-h-[90vh] w-full"
+              className="relative flex flex-col items-center"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
@@ -154,43 +154,48 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
                 </svg>
               </button>
 
-              {/* Image with zoom based on view */}
+              {/* Image display based on view */}
               <div className={cn(
-                "rounded-2xl overflow-hidden border-4",
+                "rounded-2xl overflow-hidden border-4 bg-black",
                 expandedView === 'prompt' ? "border-vibe-purple" : "border-green-500"
               )}>
-                <div className={cn(
-                  "relative bg-black",
-                  expandedView === 'prompt' ? "w-full aspect-square" : ""
-                )}>
+                {expandedView === 'prompt' ? (
+                  // Prompt view: zoom into top-left corner where the prompt overlay lives
+                  // The prompt is 35% of the image height, positioned at ~1.25% margin
+                  // To fill the container, we scale by ~2.85x (100/35)
+                  <div
+                    className="relative overflow-hidden bg-black"
+                    style={{ width: 'min(80vw, 80vh)', height: 'min(80vw, 80vh)' }}
+                  >
+                    <img
+                      src={vibe.imageUrl}
+                      alt={`Prompt for ${vibe.caption || `Vibe by ${vibe.user.displayName}`}`}
+                      style={{
+                        position: 'absolute',
+                        top: '-1%',
+                        left: '-1%',
+                        width: '285%',
+                        height: 'auto',
+                        transformOrigin: 'top left',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  // Result view: show the full image at full resolution
                   <img
                     src={vibe.imageUrl}
                     alt={vibe.caption || `Vibe by ${vibe.user.displayName}`}
-                    className={cn(
-                      "bg-black",
-                      expandedView === 'prompt'
-                        // Zoom into top-left corner where prompt overlay lives (35% of image, with 24px margin)
-                        ? "w-[300%] h-auto object-cover object-left-top"
-                        : "w-full h-auto max-h-[80vh] object-contain"
-                    )}
+                    style={{
+                      maxWidth: '90vw',
+                      maxHeight: '80vh',
+                      objectFit: 'contain',
+                    }}
                   />
-                </div>
-              </div>
-
-              {/* View label */}
-              <div className="absolute bottom-4 left-4">
-                <span className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium",
-                  expandedView === 'prompt'
-                    ? "bg-vibe-purple text-white"
-                    : "bg-green-500 text-white"
-                )}>
-                  {expandedView === 'prompt' ? '💬 PROMPT' : '✨ RESULT'}
-                </span>
+                )}
               </div>
 
               {/* Toggle between views */}
-              <div className="flex justify-center gap-3 mt-4">
+              <div className="flex justify-center items-center gap-3 mt-4">
                 <button
                   onClick={() => setExpandedView('prompt')}
                   className={cn(
@@ -216,7 +221,7 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
               </div>
 
               {/* User info in modal */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
+              <div className="flex items-center gap-2 mt-4 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
                 <Avatar
                   src={vibe.user.avatarUrl}
                   alt={vibe.user.displayName}
