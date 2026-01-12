@@ -140,8 +140,9 @@ export class UserService {
       lateByMinutes: row.late_by_minutes || 0,
     }));
 
-    const nextCursor = hasMore && items.length > 0
-      ? items[items.length - 1].createdAt.toISOString()
+    const lastItem = items[items.length - 1];
+    const nextCursor = hasMore && lastItem
+      ? lastItem.createdAt.toISOString()
       : null;
 
     return {

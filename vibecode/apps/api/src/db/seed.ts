@@ -89,7 +89,10 @@ async function seedUsers(): Promise<User[]> {
        RETURNING id, username`,
       [user.github_id, user.username, user.display_name, user.avatar_url, user.bio]
     );
-    users.push(result.rows[0]);
+    const insertedUser = result.rows[0];
+    if (insertedUser) {
+      users.push(insertedUser);
+    }
     console.log(`  ✓ Created user: ${user.username}`);
   }
 
@@ -121,8 +124,11 @@ async function seedVibes(users: User[]): Promise<string[]> {
            RETURNING id`,
           [user.id, imageUrl, imageKey, caption, vibeDateStr]
         );
-        vibeIds.push(result.rows[0].id);
-      } catch (error) {
+        const insertedVibe = result.rows[0];
+        if (insertedVibe) {
+          vibeIds.push(insertedVibe.id);
+        }
+      } catch {
         // Skip if duplicate (unique constraint)
       }
     }
@@ -142,15 +148,17 @@ async function seedReactions(users: User[], vibeIds: string[]): Promise<void> {
     const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
 
     for (let i = 0; i < numReactions && i < shuffledUsers.length; i++) {
+      const reactingUser = shuffledUsers[i];
+      if (!reactingUser) continue;
       try {
         await pool.query(
           `INSERT INTO reactions (vibe_id, user_id)
            VALUES ($1, $2)
            ON CONFLICT DO NOTHING`,
-          [vibeId, shuffledUsers[i].id]
+          [vibeId, reactingUser.id]
         );
         reactionCount++;
-      } catch (error) {
+      } catch {
         // Skip duplicates
       }
     }

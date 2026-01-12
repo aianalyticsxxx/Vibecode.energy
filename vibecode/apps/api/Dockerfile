@@ -1,21 +1,33 @@
-FROM node:20-alpine
+# API Dockerfile
+# Works standalone or with Railway NIXPACKS from apps/api directory
 
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Install dependencies using npm (Railway-compatible)
+COPY package.json ./
+RUN npm install
 
-# Install dependencies with npm
-RUN npm ci
-
-# Copy source code
+# Copy source and build
 COPY . .
-
-# Build
 RUN npm run build
 
-# Expose port
-EXPOSE 4000
+# Production stage
+FROM node:20-alpine
+WORKDIR /app
 
-# Start
-CMD ["npm", "start"]
+# Install production dependencies only
+COPY package.json ./
+RUN npm install --omit=dev
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+
+# Copy migration files for runtime
+COPY src/db/migrations ./src/db/migrations
+
+ENV NODE_ENV=production
+ENV PORT=4000
+
+EXPOSE 4000
+CMD ["node", "dist/server.js"]

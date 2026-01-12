@@ -11,8 +11,7 @@ import { useStreak } from '@/hooks/useStreak';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-// CaptureGate disabled for testing - TODO: re-enable for production
-// import { CaptureGate } from '@/components/capture/CaptureGate';
+// CaptureGate intentionally disabled - profiles viewable without posting
 import { StreakDisplay } from '@/components/profile/StreakDisplay';
 import { LateBadge } from '@/components/feed/LateBadge';
 import { EditProfileModal } from '@/components/profile/EditProfileModal';
