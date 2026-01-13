@@ -88,7 +88,7 @@ export const vibeSchemas = {
       type: 'object',
       required: ['content'],
       properties: {
-        content: { type: 'string', minLength: 1, maxLength: 500 },
+        content: { type: 'string', minLength: 1, maxLength: 5000 },
         mediaUrl: { type: 'string', format: 'uri' },
         mediaType: { type: 'string', enum: ['image', 'video'] },
       },

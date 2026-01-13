@@ -63,8 +63,8 @@ export const commentRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.status(400).send({ error: 'Comment content is required' });
       }
 
-      if (content.length > 280) {
-        return reply.status(400).send({ error: 'Comment must be 280 characters or less' });
+      if (content.length > 1000) {
+        return reply.status(400).send({ error: 'Comment must be 1000 characters or less' });
       }
 
       // Check if shot exists

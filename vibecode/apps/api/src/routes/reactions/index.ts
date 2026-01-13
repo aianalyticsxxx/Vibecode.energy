@@ -5,17 +5,11 @@ interface ShotParams {
   id: string;
 }
 
-interface PhotoReactionBody {
-  imageUrl: string;
-  imageKey: string;
-}
-
 interface Reaction {
   id: string;
   shotId: string;
   userId: string;
-  reactionType: 'sparkle' | 'photo';
-  imageUrl: string | null;
+  reactionType: 'sparkle';
   createdAt: Date;
   user: {
     id: string;
@@ -103,89 +97,6 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // POST /shots/:id/reactions/photo - Add photo reaction
-  fastify.post<{ Params: ShotParams; Body: PhotoReactionBody }>('/:id/reactions/photo', {
-    preHandler: [fastify.authenticate],
-  }, async (request, reply) => {
-    const { id: shotId } = request.params;
-    const { userId } = request.user;
-    const { imageUrl, imageKey } = request.body;
-
-    if (!imageUrl || !imageKey) {
-      return reply.status(400).send({ error: 'Image URL and key are required' });
-    }
-
-    // Check if shot exists
-    const shotCheck = await fastify.db.query(
-      'SELECT id FROM shots WHERE id = $1',
-      [shotId]
-    );
-
-    if (shotCheck.rows.length === 0) {
-      return reply.status(404).send({ error: 'Shot not found' });
-    }
-
-    // Check if already has photo reaction
-    const existingReaction = await fastify.db.query(
-      `SELECT id FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'photo'`,
-      [shotId, userId]
-    );
-
-    if (existingReaction.rows.length > 0) {
-      // Update existing photo reaction
-      await fastify.db.query(
-        `UPDATE reactions SET image_url = $1, image_key = $2, created_at = NOW()
-         WHERE shot_id = $3 AND user_id = $4 AND reaction_type = 'photo'`,
-        [imageUrl, imageKey, shotId, userId]
-      );
-    } else {
-      // Add new photo reaction
-      await fastify.db.query(
-        `INSERT INTO reactions (shot_id, user_id, reaction_type, image_url, image_key)
-         VALUES ($1, $2, 'photo', $3, $4)`,
-        [shotId, userId, imageUrl, imageKey]
-      );
-    }
-
-    // Get updated reaction count
-    const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
-      [shotId]
-    );
-
-    return {
-      success: true,
-      reactionCount: parseInt(countResult.rows[0].count, 10),
-    };
-  });
-
-  // DELETE /shots/:id/reactions/photo - Remove photo reaction
-  fastify.delete<{ Params: ShotParams }>('/:id/reactions/photo', {
-    preHandler: [fastify.authenticate],
-  }, async (request, reply) => {
-    const { id: shotId } = request.params;
-    const { userId } = request.user;
-
-    const result = await fastify.db.query(
-      `DELETE FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'photo' RETURNING id`,
-      [shotId, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return reply.status(404).send({ error: 'Photo reaction not found' });
-    }
-
-    const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
-      [shotId]
-    );
-
-    return {
-      success: true,
-      reactionCount: parseInt(countResult.rows[0].count, 10),
-    };
-  });
-
   // GET /shots/:id/reactions - Get all reactions for a shot
   fastify.get<{ Params: ShotParams }>('/:id/reactions', {
     preHandler: [fastify.optionalAuth],
@@ -208,7 +119,6 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
         r.shot_id,
         r.user_id,
         r.reaction_type,
-        r.image_url,
         r.created_at,
         u.id as user_id,
         u.username,
@@ -216,7 +126,7 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
         u.avatar_url
        FROM reactions r
        JOIN users u ON r.user_id = u.id
-       WHERE r.shot_id = $1
+       WHERE r.shot_id = $1 AND r.reaction_type = 'sparkle'
        ORDER BY r.created_at DESC`,
       [shotId]
     );
@@ -225,8 +135,7 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
       id: row.id,
       shotId: row.shot_id,
       userId: row.user_id,
-      reactionType: row.reaction_type || 'sparkle',
-      imageUrl: row.image_url,
+      reactionType: 'sparkle' as const,
       createdAt: new Date(row.created_at),
       user: {
         id: row.user_id,
@@ -239,8 +148,7 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
     return {
       reactions,
       total: reactions.length,
-      sparkleCount: reactions.filter(r => r.reactionType === 'sparkle').length,
-      photoCount: reactions.filter(r => r.reactionType === 'photo').length,
+      sparkleCount: reactions.length,
     };
   });
 };

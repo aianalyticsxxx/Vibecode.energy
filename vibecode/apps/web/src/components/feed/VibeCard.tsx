@@ -9,7 +9,6 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import { Avatar } from '@/components/ui/Avatar';
 import { VibeButton } from './VibeButton';
 import { FollowButton } from './FollowButton';
-import { PhotoReactionsRow } from '@/components/reactions/PhotoReactionsRow';
 import type { Shot } from '@/lib/api';
 
 // Keep Vibe as an alias for backwards compatibility
@@ -341,10 +340,6 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
           </motion.button>
         </div>
 
-        {/* Photo Reactions */}
-        <div className="mt-3 pt-3 border-t border-terminal-border">
-          <PhotoReactionsRow vibeId={vibe.id} />
-        </div>
       </div>
     </motion.div>
   );

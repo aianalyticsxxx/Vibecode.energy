@@ -269,7 +269,7 @@ export default function CommentsPage() {
                 type="text"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                maxLength={280}
+                maxLength={1000}
                 placeholder="Add a comment..."
                 className={cn(
                   "w-full px-4 py-2 pr-16 rounded-full text-sm transition-all",
@@ -296,7 +296,7 @@ export default function CommentsPage() {
             "text-xs text-right mt-1",
             isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/40"
           )}>
-            {newComment.length}/280
+            {newComment.length}/1000
           </div>
         </div>
       ) : (

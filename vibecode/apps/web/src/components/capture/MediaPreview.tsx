@@ -40,13 +40,13 @@ export function MediaPreview({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="What prompt did you give Claude?"
-            maxLength={1000}
+            maxLength={5000}
             rows={3}
             autoFocus
             className="w-full bg-terminal-bg-elevated border border-terminal-border rounded-lg resize-none p-3 text-terminal-text placeholder-terminal-text-dim font-mono text-sm focus:outline-none focus:border-terminal-accent"
           />
           <div className="text-right mt-1">
-            <span className="text-terminal-text-dim text-xs font-mono">{prompt.length}/1000</span>
+            <span className="text-terminal-text-dim text-xs font-mono">{prompt.length}/5000</span>
           </div>
         </div>
       </GlassPanel>

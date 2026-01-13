@@ -170,8 +170,7 @@ export interface Reaction {
   id: string;
   shotId: string;
   userId: string;
-  reactionType: 'sparkle' | 'photo';
-  imageUrl: string | null;
+  reactionType: 'sparkle';
   createdAt: string;
   user: {
     id: string;
@@ -185,7 +184,6 @@ export interface ReactionsResponse {
   reactions: Reaction[];
   total: number;
   sparkleCount: number;
-  photoCount: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -431,13 +429,7 @@ export const api = {
 
   unsparkleShot: (shotId: string) => del<{ sparkleCount: number }>(`/shots/${shotId}/sparkle`),
 
-  // Photo reactions
-  addPhotoReaction: (shotId: string, imageUrl: string, imageKey: string) =>
-    post<{ success: boolean; reactionCount: number }>(`/shots/${shotId}/reactions/photo`, { imageUrl, imageKey }),
-
-  removePhotoReaction: (shotId: string) =>
-    del<{ success: boolean; reactionCount: number }>(`/shots/${shotId}/reactions/photo`),
-
+  // Reactions
   getReactions: (shotId: string) => get<ReactionsResponse>(`/shots/${shotId}/reactions`),
 
   // Users

@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { VibeFeed } from '@/components/feed/VibeFeed';
+import { ChallengesFeed } from '@/components/feed/ChallengesFeed';
 import { CaptureGate } from '@/components/capture/CaptureGate';
 import { VibePulse } from '@/components/presence/VibePulse';
 import { DashboardLayout, StatsPanel, TrendingPanel, ActivityFeed } from '@/components/dashboard';
 import { useAuth } from '@/hooks/useAuth';
 
-type FeedTab = 'explore' | 'following';
+type FeedTab = 'explore' | 'following' | 'challenges';
 
 export default function FeedPage() {
   const { user } = useAuth();
@@ -86,14 +86,18 @@ export default function FeedPage() {
                 ./following
               </button>
             )}
-            <Link
-              href="/challenges"
-              className="font-mono text-sm py-2 px-4 rounded-md border transition-all
-                         bg-terminal-bg-elevated border-terminal-border text-terminal-text-secondary
-                         hover:text-terminal-text hover:border-terminal-border-bright"
+            <button
+              onClick={() => setActiveTab('challenges')}
+              className={`
+                font-mono text-sm py-2 px-4 rounded-md border transition-all
+                ${activeTab === 'challenges'
+                  ? 'bg-terminal-accent/10 border-terminal-accent text-terminal-accent'
+                  : 'bg-terminal-bg-elevated border-terminal-border text-terminal-text-secondary hover:text-terminal-text hover:border-terminal-border-bright'
+                }
+              `}
             >
               ./challenges
-            </Link>
+            </button>
           </div>
 
           {/* Feed */}
@@ -103,7 +107,11 @@ export default function FeedPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <VibeFeed feedType={activeTab === 'explore' ? 'everyone' : 'following'} />
+            {activeTab === 'challenges' ? (
+              <ChallengesFeed />
+            ) : (
+              <VibeFeed feedType={activeTab === 'explore' ? 'everyone' : 'following'} />
+            )}
           </motion.div>
         </div>
       </DashboardLayout>
