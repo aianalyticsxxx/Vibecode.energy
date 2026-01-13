@@ -73,13 +73,15 @@ export default function HomePage() {
           <div className="p-6 space-y-3">
             {/* Logo */}
             <div className="flex items-center gap-3 mb-6">
-              <motion.span
-                className="text-terminal-accent font-mono text-2xl"
+              <motion.div
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               >
-                &gt;_
-              </motion.span>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-terminal-accent">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </motion.div>
               <span className="text-xl font-semibold text-terminal-text">
                 OneShotCoding
               </span>

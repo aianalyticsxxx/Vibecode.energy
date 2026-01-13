@@ -48,9 +48,12 @@ export default function FeedPage() {
               </p>
             </div>
 
-            {/* Terminal-style cursor logo */}
+            {/* Concentric circles logo */}
             <div className="hidden sm:flex items-center gap-2">
-              <span className="font-mono text-lg text-terminal-accent">&gt;_</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-terminal-accent">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+              </svg>
               <span className="font-semibold text-terminal-text">OneShotCoding</span>
             </div>
           </motion.div>
