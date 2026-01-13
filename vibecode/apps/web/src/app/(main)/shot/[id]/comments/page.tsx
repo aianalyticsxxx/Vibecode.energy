@@ -17,7 +17,7 @@ import { Avatar } from '@/components/ui/Avatar';
 export default function CommentsPage() {
   const params = useParams();
   const router = useRouter();
-  const vibeId = params.id as string;
+  const shotId = params.id as string;
   const { user } = useAuth();
   const { theme } = useTheme();
   const isNeumorphic = theme === 'neumorphic';
@@ -26,15 +26,15 @@ export default function CommentsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch the vibe for header preview
-  const { data: vibe, isLoading: vibeLoading } = useQuery({
-    queryKey: ['vibe', vibeId],
+  // Fetch the shot for header preview
+  const { data: shot, isLoading: shotLoading } = useQuery({
+    queryKey: ['shot', shotId],
     queryFn: async () => {
-      const { data, error } = await api.getVibe(vibeId);
+      const { data, error } = await api.getShot(shotId);
       if (error) throw new Error(error.message);
       return data;
     },
-    enabled: !!vibeId,
+    enabled: !!shotId,
   });
 
   const {
@@ -47,7 +47,7 @@ export default function CommentsPage() {
     addComment,
     isAddingComment,
     deleteComment,
-  } = useComments(vibeId);
+  } = useComments(shotId);
 
   // Auto-focus input on mount
   useEffect(() => {
@@ -106,8 +106,8 @@ export default function CommentsPage() {
           </h1>
         </div>
 
-        {/* Vibe preview */}
-        {vibeLoading ? (
+        {/* Shot preview */}
+        {shotLoading ? (
           <GlassPanel className="animate-pulse mb-4">
             <div className="flex gap-3">
               <div className="w-16 h-16 rounded-lg bg-white/10" />
@@ -117,33 +117,33 @@ export default function CommentsPage() {
               </div>
             </div>
           </GlassPanel>
-        ) : vibe && (
+        ) : shot && (
           <GlassPanel className="mb-4">
             <div className="flex gap-3">
               <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
-                  src={vibe.imageUrl}
-                  alt="Vibe preview"
+                  src={shot.imageUrl}
+                  alt="Shot preview"
                   fill
                   className="object-cover"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <Link
-                  href={`/profile/${vibe.user.username}`}
+                  href={`/profile/${shot.user.username}`}
                   className={cn(
                     "font-semibold hover:text-vibe-purple-light transition-colors",
                     isNeumorphic ? "text-neumorphic-text" : "text-white"
                   )}
                 >
-                  {vibe.user.displayName}
+                  {shot.user.displayName}
                 </Link>
-                {vibe.caption && (
+                {shot.prompt && (
                   <p className={cn(
                     "text-sm truncate",
                     isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/60"
                   )}>
-                    {vibe.caption}
+                    {shot.prompt}
                   </p>
                 )}
               </div>

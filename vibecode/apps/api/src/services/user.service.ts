@@ -7,33 +7,7 @@ interface User {
   avatarUrl?: string;
   bio?: string;
   createdAt: Date;
-  vibeCount: number;
-  streakCount: number;
-}
-
-interface UserVibesOptions {
-  userId: string;
-  cursor?: string;
-  limit: number;
-  currentUserId?: string;
-}
-
-interface Vibe {
-  id: string;
-  imageUrl: string;
-  caption: string | null;
-  vibeDate: string;
-  createdAt: Date;
-  sparkleCount: number;
-  hasSparkled: boolean;
-  isLate: boolean;
-  lateByMinutes: number;
-}
-
-interface UserVibesResult {
-  items: Vibe[];
-  nextCursor: string | null;
-  hasMore: boolean;
+  shotCount: number;
 }
 
 interface UpdateProfileData {
@@ -56,13 +30,11 @@ export class UserService {
         u.avatar_url,
         u.bio,
         u.created_at,
-        COUNT(DISTINCT v.id) as vibe_count,
-        COALESCE(us.current_streak, 0) as streak_count
+        COUNT(DISTINCT s.id) as shot_count
       FROM users u
-      LEFT JOIN vibes v ON v.user_id = u.id
-      LEFT JOIN user_streaks us ON us.user_id = u.id
+      LEFT JOIN shots s ON s.user_id = u.id
       WHERE u.username = $1
-      GROUP BY u.id, us.current_streak`,
+      GROUP BY u.id`,
       [username]
     );
 
@@ -78,77 +50,7 @@ export class UserService {
       avatarUrl: row.avatar_url,
       bio: row.bio,
       createdAt: new Date(row.created_at),
-      vibeCount: parseInt(row.vibe_count, 10) || 0,
-      streakCount: parseInt(row.streak_count, 10) || 0,
-    };
-  }
-
-  /**
-   * Get user's vibes with pagination
-   */
-  async getUserVibes(options: UserVibesOptions): Promise<UserVibesResult> {
-    const { userId, cursor, limit, currentUserId } = options;
-
-    const params: (string | number)[] = [userId, limit + 1];
-    let paramIndex = 3;
-
-    let cursorCondition = '';
-    if (cursor) {
-      cursorCondition = `AND v.created_at < $${paramIndex}`;
-      params.push(cursor);
-      paramIndex++;
-    }
-
-    let hasSparkledSelect = 'false as has_sparkled';
-    if (currentUserId) {
-      hasSparkledSelect = `EXISTS(SELECT 1 FROM reactions WHERE vibe_id = v.id AND user_id = $${paramIndex}) as has_sparkled`;
-      params.push(currentUserId);
-    }
-
-    const query = `
-      SELECT
-        v.id,
-        v.image_url,
-        v.caption,
-        v.vibe_date,
-        v.created_at,
-        v.is_late,
-        v.late_by_minutes,
-        COUNT(r.id) as sparkle_count,
-        ${hasSparkledSelect}
-      FROM vibes v
-      LEFT JOIN reactions r ON r.vibe_id = v.id
-      WHERE v.user_id = $1
-      ${cursorCondition}
-      GROUP BY v.id
-      ORDER BY v.created_at DESC
-      LIMIT $2
-    `;
-
-    const result = await this.fastify.db.query(query, params);
-
-    const hasMore = result.rows.length > limit;
-    const items = result.rows.slice(0, limit).map((row): Vibe => ({
-      id: row.id,
-      imageUrl: row.image_url,
-      caption: row.caption,
-      vibeDate: row.vibe_date,
-      createdAt: new Date(row.created_at),
-      sparkleCount: parseInt(row.sparkle_count, 10) || 0,
-      hasSparkled: row.has_sparkled || false,
-      isLate: row.is_late || false,
-      lateByMinutes: row.late_by_minutes || 0,
-    }));
-
-    const lastItem = items[items.length - 1];
-    const nextCursor = hasMore && lastItem
-      ? lastItem.createdAt.toISOString()
-      : null;
-
-    return {
-      items,
-      nextCursor,
-      hasMore,
+      shotCount: parseInt(row.shot_count, 10) || 0,
     };
   }
 
@@ -190,8 +92,7 @@ export class UserService {
         avatarUrl: row.avatar_url,
         bio: row.bio,
         createdAt: new Date(row.created_at),
-        vibeCount: 0,
-        streakCount: 0,
+        shotCount: 0,
       };
     }
 
@@ -217,35 +118,7 @@ export class UserService {
       avatarUrl: row.avatar_url,
       bio: row.bio,
       createdAt: new Date(row.created_at),
-      vibeCount: 0,
-      streakCount: 0,
+      shotCount: 0,
     };
-  }
-
-  /**
-   * Calculate consecutive day streak for a user
-   */
-  async calculateStreak(userId: string): Promise<number> {
-    const result = await this.fastify.db.query(
-      `WITH daily_vibes AS (
-        SELECT DISTINCT DATE(created_at) as vibe_date
-        FROM vibes
-        WHERE user_id = $1
-        ORDER BY vibe_date DESC
-      ),
-      numbered AS (
-        SELECT
-          vibe_date,
-          vibe_date - (ROW_NUMBER() OVER (ORDER BY vibe_date DESC))::int as grp
-        FROM daily_vibes
-      )
-      SELECT COUNT(*) as streak
-      FROM numbered
-      WHERE grp = (SELECT grp FROM numbered WHERE vibe_date = CURRENT_DATE)
-         OR (grp = (SELECT grp FROM numbered WHERE vibe_date = CURRENT_DATE - 1) AND NOT EXISTS (SELECT 1 FROM daily_vibes WHERE vibe_date = CURRENT_DATE))`,
-      [userId]
-    );
-
-    return parseInt(result.rows[0]?.streak, 10) || 0;
   }
 }

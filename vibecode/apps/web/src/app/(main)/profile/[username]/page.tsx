@@ -5,15 +5,12 @@ import { useParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { api, Vibe } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import { useStreak } from '@/hooks/useStreak';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 // CaptureGate intentionally disabled - profiles viewable without posting
-import { StreakDisplay } from '@/components/profile/StreakDisplay';
-import { LateBadge } from '@/components/feed/LateBadge';
 import { EditProfileModal } from '@/components/profile/EditProfileModal';
 import type { User } from '@/lib/auth';
 
@@ -34,22 +31,21 @@ export default function ProfilePage() {
     },
   });
 
-  // Fetch user vibes
-  const { data: vibesData, isLoading: vibesLoading } = useQuery({
-    queryKey: ['profile-vibes', username],
+  // Fetch user shots
+  const { data: shotsData, isLoading: shotsLoading } = useQuery({
+    queryKey: ['profile-shots', username],
     queryFn: async () => {
-      const { data, error } = await api.getUserVibes(username);
+      const { data, error } = await api.getUserShots(username);
       if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
   });
 
-  const vibes = vibesData?.items ?? [];
-  const isLoading = userLoading || vibesLoading;
+  const shots = shotsData?.items ?? [];
+  const isLoading = userLoading || shotsLoading;
   const error = userError;
 
-  const { streak } = useStreak(username);
   const isOwnProfile = currentUser?.username === username;
 
   if (isLoading) {
@@ -116,36 +112,18 @@ export default function ProfilePage() {
               <p className="text-white/70 mb-4 max-w-xs mx-auto">{user.bio}</p>
             )}
 
-            {/* Streak Display */}
-            {streak && (
-              <div className="flex justify-center mb-4">
-                <StreakDisplay
-                  streak={streak}
-                  size="lg"
-                  showMilestone
-                  showNextMilestone={isOwnProfile}
-                />
-              </div>
-            )}
-
             {/* Stats */}
             <div className="flex justify-center gap-8 py-4 border-y border-glass-border">
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">{vibes.length}</p>
-                <p className="text-white/50 text-sm">Vibes</p>
+                <p className="text-2xl font-bold text-white">{shots.length}</p>
+                <p className="text-white/50 text-sm">Shots</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">
-                  {vibes.reduce((sum, v) => sum + v.sparkleCount, 0)}
+                  {shots.reduce((sum, s) => sum + s.sparkleCount, 0)}
                 </p>
                 <p className="text-white/50 text-sm">Sparkles</p>
               </div>
-              {streak && (
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-white">{streak.longestStreak}</p>
-                  <p className="text-white/50 text-sm">Best Streak</p>
-                </div>
-              )}
             </div>
 
             {/* Actions */}
@@ -162,52 +140,46 @@ export default function ProfilePage() {
           </GlassPanel>
         </motion.div>
 
-        {/* Vibes grid */}
+        {/* Shots grid */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {vibes.length === 0 ? (
+          {shots.length === 0 ? (
             <GlassPanel className="text-center" padding="lg">
               <div className="text-4xl mb-4">✨</div>
               <p className="text-white/60">
                 {isOwnProfile
-                  ? "You haven't shared any vibes yet"
-                  : "No vibes yet"}
+                  ? "You haven't shared any shots yet"
+                  : "No shots yet"}
               </p>
             </GlassPanel>
           ) : (
             <div className="grid grid-cols-3 gap-1">
-              {vibes.map((vibe, index) => (
+              {shots.map((shot, index) => (
                 <motion.div
-                  key={vibe.id}
+                  key={shot.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
                   className="aspect-square relative rounded overflow-hidden group cursor-pointer"
                 >
                   <Image
-                    src={vibe.imageUrl}
-                    alt={vibe.caption || 'Vibe'}
+                    src={shot.imageUrl}
+                    alt={shot.caption || shot.prompt || 'Shot'}
                     fill
                     className="object-cover transition-transform group-hover:scale-105"
                     sizes="(max-width: 768px) 33vw, 170px"
                   />
-                  {/* Late indicator */}
-                  {vibe.isLate && vibe.lateByMinutes > 0 && (
-                    <div className="absolute top-1 right-1">
-                      <span className="text-orange-400 text-xs">⏰</span>
-                    </div>
-                  )}
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                     <div className="flex items-center gap-2 text-white">
                       <span className="text-lg">✨</span>
-                      <span className="font-semibold">{vibe.sparkleCount}</span>
+                      <span className="font-semibold">{shot.sparkleCount}</span>
                     </div>
-                    {vibe.isLate && vibe.lateByMinutes > 0 && (
-                      <LateBadge lateByMinutes={vibe.lateByMinutes} className="text-xs" />
+                    {shot.prompt && (
+                      <p className="text-white/80 text-xs px-2 text-center line-clamp-2">{shot.prompt}</p>
                     )}
                   </div>
                 </motion.div>
@@ -223,7 +195,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.3 }}
           className="text-center text-white/30 text-sm"
         >
-          Vibing since{' '}
+          Creating since{' '}
           {new Date(user.createdAt).toLocaleDateString('en-US', {
             month: 'long',
             year: 'numeric',

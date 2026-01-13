@@ -7,7 +7,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { useDiscoveryFeed } from '@/hooks/useDiscoveryFeed';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { VibeCard } from '@/components/feed/VibeCard';
-import { VibecheckBanner } from '@/components/vibecheck/VibecheckBanner';
 
 type SortOption = 'recent' | 'popular';
 
@@ -67,7 +66,7 @@ export default function DiscoverPage() {
                   isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/50'
                 )}
               >
-                Explore vibes from all coders
+                Explore shots from all coders
               </p>
             </div>
 
@@ -115,10 +114,7 @@ export default function DiscoverPage() {
         </GlassPanel>
       </motion.div>
 
-      {/* VibeCheck Banner */}
-      <VibecheckBanner />
-
-      {/* Vibes Feed */}
+      {/* Shots Feed */}
       {isLoading ? (
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
@@ -146,14 +142,14 @@ export default function DiscoverPage() {
               isNeumorphic ? 'text-neumorphic-text' : 'text-white'
             )}
           >
-            No vibes yet
+            No shots yet
           </h2>
           <p
             className={cn(
               isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/60'
             )}
           >
-            Be the first to share your vibecoding moment!
+            Be the first to share your one-shot creation!
           </p>
         </GlassPanel>
       ) : (
@@ -196,7 +192,7 @@ export default function DiscoverPage() {
                 isNeumorphic ? 'text-neumorphic-text-secondary' : 'text-white/40'
               )}
             >
-              You've seen all the vibes!
+              You've seen all the shots!
             </p>
           )}
         </motion.div>

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 
 interface Comment {
   id: string;
-  vibeId: string;
+  shotId: string;
   content: string;
   createdAt: Date;
   user: {
@@ -24,18 +24,18 @@ export class CommentService {
   constructor(private fastify: FastifyInstance) {}
 
   /**
-   * Add a comment to a vibe
+   * Add a comment to a shot
    */
   async addComment(
-    vibeId: string,
+    shotId: string,
     userId: string,
     content: string
   ): Promise<Comment> {
     const result = await this.fastify.db.query(
-      `INSERT INTO comments (vibe_id, user_id, content)
+      `INSERT INTO comments (shot_id, user_id, content)
        VALUES ($1, $2, $3)
        RETURNING id, created_at`,
-      [vibeId, userId, content.trim()]
+      [shotId, userId, content.trim()]
     );
 
     const commentId = result.rows[0].id;
@@ -56,7 +56,7 @@ export class CommentService {
     const result = await this.fastify.db.query(
       `SELECT
         c.id,
-        c.vibe_id,
+        c.shot_id,
         c.content,
         c.created_at,
         u.id as user_id,
@@ -77,14 +77,14 @@ export class CommentService {
   }
 
   /**
-   * Get comments for a vibe with pagination (oldest first)
+   * Get comments for a shot with pagination (oldest first)
    */
   async getComments(
-    vibeId: string,
+    shotId: string,
     cursor?: string,
     limit: number = 20
   ): Promise<CommentListResult> {
-    const params: (string | number)[] = [vibeId, limit + 1];
+    const params: (string | number)[] = [shotId, limit + 1];
     let cursorCondition = '';
 
     if (cursor) {
@@ -96,7 +96,7 @@ export class CommentService {
     const result = await this.fastify.db.query(
       `SELECT
         c.id,
-        c.vibe_id,
+        c.shot_id,
         c.content,
         c.created_at,
         u.id as user_id,
@@ -105,7 +105,7 @@ export class CommentService {
         u.avatar_url
       FROM comments c
       JOIN users u ON c.user_id = u.id
-      WHERE c.vibe_id = $1 ${cursorCondition}
+      WHERE c.shot_id = $1 ${cursorCondition}
       ORDER BY c.created_at ASC
       LIMIT $2`,
       params
@@ -113,8 +113,8 @@ export class CommentService {
 
     // Get total count
     const countResult = await this.fastify.db.query(
-      'SELECT COUNT(*) as total FROM comments WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as total FROM comments WHERE shot_id = $1',
+      [shotId]
     );
     const total = parseInt(countResult.rows[0].total, 10) || 0;
 
@@ -142,12 +142,12 @@ export class CommentService {
   }
 
   /**
-   * Get comment count for a vibe
+   * Get comment count for a shot
    */
-  async getCommentCount(vibeId: string): Promise<number> {
+  async getCommentCount(shotId: string): Promise<number> {
     const result = await this.fastify.db.query(
-      'SELECT COUNT(*) as count FROM comments WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as count FROM comments WHERE shot_id = $1',
+      [shotId]
     );
     return parseInt(result.rows[0].count, 10) || 0;
   }
@@ -155,7 +155,7 @@ export class CommentService {
   private mapCommentRow(row: Record<string, unknown>): Comment {
     return {
       id: row.id as string,
-      vibeId: row.vibe_id as string,
+      shotId: row.shot_id as string,
       content: row.content as string,
       createdAt: new Date(row.created_at as string),
       user: {

@@ -1,11 +1,12 @@
 'use client';
 
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { api, Vibe, VibesFeedResponse } from '@/lib/api';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { api, Shot, ShotsFeedResponse } from '@/lib/api';
 import { useCallback } from 'react';
 
 export interface UseFollowingFeedReturn {
-  vibes: Vibe[];
+  shots: Shot[];
+  vibes: Shot[]; // Legacy alias
   isLoading: boolean;
   isLoadingMore: boolean;
   isRefetching: boolean;
@@ -16,8 +17,6 @@ export interface UseFollowingFeedReturn {
 }
 
 export function useFollowingFeed(): UseFollowingFeedReturn {
-  const queryClient = useQueryClient();
-
   const {
     data,
     isLoading,
@@ -28,7 +27,7 @@ export function useFollowingFeed(): UseFollowingFeedReturn {
     fetchNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['vibes', 'following'],
+    queryKey: ['shots', 'following'],
     queryFn: async ({ pageParam }) => {
       const { data, error } = await api.getFollowingFeed(pageParam);
 
@@ -36,7 +35,7 @@ export function useFollowingFeed(): UseFollowingFeedReturn {
         throw new Error(error.message);
       }
 
-      return data as VibesFeedResponse;
+      return data as ShotsFeedResponse;
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
@@ -48,7 +47,7 @@ export function useFollowingFeed(): UseFollowingFeedReturn {
     staleTime: 1000 * 60 * 5,
   });
 
-  const vibes = data?.pages.flatMap((page) => page?.vibes || []) || [];
+  const shots = data?.pages.flatMap((page) => page?.shots || []) || [];
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -57,7 +56,8 @@ export function useFollowingFeed(): UseFollowingFeedReturn {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return {
-    vibes,
+    shots,
+    vibes: shots, // Legacy alias
     isLoading,
     isLoadingMore: isFetchingNextPage,
     isRefetching,

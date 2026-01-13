@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { reactionSchemas } from '../../schemas/reaction.schemas.js';
 
-interface VibeParams {
+interface ShotParams {
   id: string;
 }
 
@@ -12,7 +12,7 @@ interface PhotoReactionBody {
 
 interface Reaction {
   id: string;
-  vibeId: string;
+  shotId: string;
   userId: string;
   reactionType: 'sparkle' | 'photo';
   imageUrl: string | null;
@@ -26,88 +26,88 @@ interface Reaction {
 }
 
 export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
-  // POST /vibes/:id/vibe - Add sparkle reaction
-  fastify.post<{ Params: VibeParams }>('/:id/vibe', {
+  // POST /shots/:id/sparkle - Add sparkle reaction
+  fastify.post<{ Params: ShotParams }>('/:id/sparkle', {
     preHandler: [fastify.authenticate],
     schema: reactionSchemas.addReaction,
   }, async (request, reply) => {
-    const { id: vibeId } = request.params;
+    const { id: shotId } = request.params;
     const { userId } = request.user;
 
-    // Check if vibe exists
-    const vibeCheck = await fastify.db.query(
-      'SELECT id FROM vibes WHERE id = $1',
-      [vibeId]
+    // Check if shot exists
+    const shotCheck = await fastify.db.query(
+      'SELECT id FROM shots WHERE id = $1',
+      [shotId]
     );
 
-    if (vibeCheck.rows.length === 0) {
-      return reply.status(404).send({ error: 'Vibe not found' });
+    if (shotCheck.rows.length === 0) {
+      return reply.status(404).send({ error: 'Shot not found' });
     }
 
     // Check if already reacted with sparkle
     const existingReaction = await fastify.db.query(
-      `SELECT id FROM reactions WHERE vibe_id = $1 AND user_id = $2 AND reaction_type = 'sparkle'`,
-      [vibeId, userId]
+      `SELECT id FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'sparkle'`,
+      [shotId, userId]
     );
 
     if (existingReaction.rows.length > 0) {
-      return reply.status(409).send({ error: 'Already reacted to this vibe' });
+      return reply.status(409).send({ error: 'Already sparkled this shot' });
     }
 
     // Add sparkle reaction
     await fastify.db.query(
-      `INSERT INTO reactions (vibe_id, user_id, reaction_type)
+      `INSERT INTO reactions (shot_id, user_id, reaction_type)
        VALUES ($1, $2, 'sparkle')`,
-      [vibeId, userId]
+      [shotId, userId]
     );
 
     // Get updated reaction count
     const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
+      [shotId]
     );
 
     return {
       success: true,
-      reactionCount: parseInt(countResult.rows[0].count, 10),
+      sparkleCount: parseInt(countResult.rows[0].count, 10),
     };
   });
 
-  // DELETE /vibes/:id/vibe - Remove sparkle reaction
-  fastify.delete<{ Params: VibeParams }>('/:id/vibe', {
+  // DELETE /shots/:id/sparkle - Remove sparkle reaction
+  fastify.delete<{ Params: ShotParams }>('/:id/sparkle', {
     preHandler: [fastify.authenticate],
     schema: reactionSchemas.removeReaction,
   }, async (request, reply) => {
-    const { id: vibeId } = request.params;
+    const { id: shotId } = request.params;
     const { userId } = request.user;
 
     // Remove sparkle reaction
     const result = await fastify.db.query(
-      `DELETE FROM reactions WHERE vibe_id = $1 AND user_id = $2 AND reaction_type = 'sparkle' RETURNING id`,
-      [vibeId, userId]
+      `DELETE FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'sparkle' RETURNING id`,
+      [shotId, userId]
     );
 
     if (result.rows.length === 0) {
-      return reply.status(404).send({ error: 'Reaction not found' });
+      return reply.status(404).send({ error: 'Sparkle not found' });
     }
 
     // Get updated reaction count
     const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
+      [shotId]
     );
 
     return {
       success: true,
-      reactionCount: parseInt(countResult.rows[0].count, 10),
+      sparkleCount: parseInt(countResult.rows[0].count, 10),
     };
   });
 
-  // POST /vibes/:id/reactions/photo - Add photo reaction (RealMoji style)
-  fastify.post<{ Params: VibeParams; Body: PhotoReactionBody }>('/:id/reactions/photo', {
+  // POST /shots/:id/reactions/photo - Add photo reaction
+  fastify.post<{ Params: ShotParams; Body: PhotoReactionBody }>('/:id/reactions/photo', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
-    const { id: vibeId } = request.params;
+    const { id: shotId } = request.params;
     const { userId } = request.user;
     const { imageUrl, imageKey } = request.body;
 
@@ -115,42 +115,42 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Image URL and key are required' });
     }
 
-    // Check if vibe exists
-    const vibeCheck = await fastify.db.query(
-      'SELECT id FROM vibes WHERE id = $1',
-      [vibeId]
+    // Check if shot exists
+    const shotCheck = await fastify.db.query(
+      'SELECT id FROM shots WHERE id = $1',
+      [shotId]
     );
 
-    if (vibeCheck.rows.length === 0) {
-      return reply.status(404).send({ error: 'Vibe not found' });
+    if (shotCheck.rows.length === 0) {
+      return reply.status(404).send({ error: 'Shot not found' });
     }
 
     // Check if already has photo reaction
     const existingReaction = await fastify.db.query(
-      `SELECT id FROM reactions WHERE vibe_id = $1 AND user_id = $2 AND reaction_type = 'photo'`,
-      [vibeId, userId]
+      `SELECT id FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'photo'`,
+      [shotId, userId]
     );
 
     if (existingReaction.rows.length > 0) {
       // Update existing photo reaction
       await fastify.db.query(
         `UPDATE reactions SET image_url = $1, image_key = $2, created_at = NOW()
-         WHERE vibe_id = $3 AND user_id = $4 AND reaction_type = 'photo'`,
-        [imageUrl, imageKey, vibeId, userId]
+         WHERE shot_id = $3 AND user_id = $4 AND reaction_type = 'photo'`,
+        [imageUrl, imageKey, shotId, userId]
       );
     } else {
       // Add new photo reaction
       await fastify.db.query(
-        `INSERT INTO reactions (vibe_id, user_id, reaction_type, image_url, image_key)
+        `INSERT INTO reactions (shot_id, user_id, reaction_type, image_url, image_key)
          VALUES ($1, $2, 'photo', $3, $4)`,
-        [vibeId, userId, imageUrl, imageKey]
+        [shotId, userId, imageUrl, imageKey]
       );
     }
 
     // Get updated reaction count
     const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
+      [shotId]
     );
 
     return {
@@ -159,16 +159,16 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // DELETE /vibes/:id/reactions/photo - Remove photo reaction
-  fastify.delete<{ Params: VibeParams }>('/:id/reactions/photo', {
+  // DELETE /shots/:id/reactions/photo - Remove photo reaction
+  fastify.delete<{ Params: ShotParams }>('/:id/reactions/photo', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
-    const { id: vibeId } = request.params;
+    const { id: shotId } = request.params;
     const { userId } = request.user;
 
     const result = await fastify.db.query(
-      `DELETE FROM reactions WHERE vibe_id = $1 AND user_id = $2 AND reaction_type = 'photo' RETURNING id`,
-      [vibeId, userId]
+      `DELETE FROM reactions WHERE shot_id = $1 AND user_id = $2 AND reaction_type = 'photo' RETURNING id`,
+      [shotId, userId]
     );
 
     if (result.rows.length === 0) {
@@ -176,8 +176,8 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const countResult = await fastify.db.query(
-      'SELECT COUNT(*) as count FROM reactions WHERE vibe_id = $1',
-      [vibeId]
+      'SELECT COUNT(*) as count FROM reactions WHERE shot_id = $1',
+      [shotId]
     );
 
     return {
@@ -186,26 +186,26 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // GET /vibes/:id/reactions - Get all reactions for a vibe
-  fastify.get<{ Params: VibeParams }>('/:id/reactions', {
+  // GET /shots/:id/reactions - Get all reactions for a shot
+  fastify.get<{ Params: ShotParams }>('/:id/reactions', {
     preHandler: [fastify.optionalAuth],
   }, async (request, reply) => {
-    const { id: vibeId } = request.params;
+    const { id: shotId } = request.params;
 
-    // Check if vibe exists
-    const vibeCheck = await fastify.db.query(
-      'SELECT id FROM vibes WHERE id = $1',
-      [vibeId]
+    // Check if shot exists
+    const shotCheck = await fastify.db.query(
+      'SELECT id FROM shots WHERE id = $1',
+      [shotId]
     );
 
-    if (vibeCheck.rows.length === 0) {
-      return reply.status(404).send({ error: 'Vibe not found' });
+    if (shotCheck.rows.length === 0) {
+      return reply.status(404).send({ error: 'Shot not found' });
     }
 
     const result = await fastify.db.query(
       `SELECT
         r.id,
-        r.vibe_id,
+        r.shot_id,
         r.user_id,
         r.reaction_type,
         r.image_url,
@@ -216,14 +216,14 @@ export const reactionRoutes: FastifyPluginAsync = async (fastify) => {
         u.avatar_url
        FROM reactions r
        JOIN users u ON r.user_id = u.id
-       WHERE r.vibe_id = $1
+       WHERE r.shot_id = $1
        ORDER BY r.created_at DESC`,
-      [vibeId]
+      [shotId]
     );
 
     const reactions: Reaction[] = result.rows.map((row) => ({
       id: row.id,
-      vibeId: row.vibe_id,
+      shotId: row.shot_id,
       userId: row.user_id,
       reactionType: row.reaction_type || 'sparkle',
       imageUrl: row.image_url,

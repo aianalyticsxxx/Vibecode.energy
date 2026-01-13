@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DualCapture, DualCaptureResult } from '@/components/capture/DualCapture';
 import { DualPhotoPreview } from '@/components/capture/DualPhotoPreview';
 import { GlassPanel } from '@/components/ui/GlassPanel';
-import { useDailyVibe } from '@/hooks/useDailyVibe';
 import { useVibes } from '@/hooks/useVibes';
 import { api } from '@/lib/api';
 
@@ -37,7 +36,6 @@ export default function CapturePage() {
   const [capturedPhotos, setCapturedPhotos] = useState<DualCaptureResult | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { hasPostedToday, todaysVibe, markAsPosted } = useDailyVibe();
   const { addVibe } = useVibes();
 
   const handleCapture = useCallback((result: DualCaptureResult) => {
@@ -208,11 +206,12 @@ export default function CapturePage() {
           }, 'image/jpeg', 0.9);
         });
 
-        const file = new File([combinedBlob], 'vibe.jpg', {
+        const file = new File([combinedBlob], 'shot.jpg', {
           type: 'image/jpeg',
         });
         console.log('File created for upload:', file.name, file.size);
 
+        // For now, use the legacy createVibe which maps to createShot
         const { data, error: apiError } = await api.createVibe(file, caption);
 
         if (apiError) {
@@ -222,75 +221,20 @@ export default function CapturePage() {
 
         if (data) {
           // Optimistically update state
-          markAsPosted(data);
           addVibe(data);
 
           // Redirect to feed
           router.push('/feed');
         }
       } catch (err) {
-        console.error('Failed to post vibe:', err);
-        setError('Failed to share your vibe. Please try again.');
+        console.error('Failed to post shot:', err);
+        setError('Failed to share your shot. Please try again.');
       } finally {
         setIsPosting(false);
       }
     },
-    [capturedPhotos, markAsPosted, addVibe, router]
+    [capturedPhotos, addVibe, router]
   );
-
-  // If user has already posted today, show their vibe
-  if (hasPostedToday && todaysVibe) {
-    return (
-      <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <GlassPanel className="text-center" padding="lg">
-            <div className="text-5xl mb-4">✨</div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Vibe shared!
-            </h1>
-            <p className="text-white/60 mb-6">
-              You&apos;ve already shared your vibe today. Come back tomorrow!
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/feed')}
-              className="text-vibe-purple hover:text-vibe-purple-light transition-colors font-medium"
-            >
-              View your feed
-            </motion.button>
-          </GlassPanel>
-        </motion.div>
-
-        {/* Show today's vibe preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <p className="text-white/50 text-sm text-center mb-3">
-            Today&apos;s vibe
-          </p>
-          <GlassPanel padding="none" className="overflow-hidden">
-            <div className="aspect-video relative">
-              <img
-                src={todaysVibe.imageUrl}
-                alt="Today's vibe"
-                className="w-full h-full object-contain bg-black"
-              />
-            </div>
-            {todaysVibe.caption && (
-              <div className="p-4">
-                <p className="text-white/90">{todaysVibe.caption}</p>
-              </div>
-            )}
-          </GlassPanel>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -301,7 +245,7 @@ export default function CapturePage() {
         className="text-center"
       >
         <h1 className="text-2xl font-bold text-white mb-2">
-          Share your vibe
+          Share your shot
         </h1>
         <p className="text-white/60">
           {capturedPhotos

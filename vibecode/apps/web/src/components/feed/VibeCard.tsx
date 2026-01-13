@@ -9,11 +9,13 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { VibeButton } from './VibeButton';
-import { LateBadge } from './LateBadge';
 import { FollowButton } from './FollowButton';
 import { PhotoReactionsRow } from '@/components/reactions/PhotoReactionsRow';
 import { useTheme } from '@/hooks/useTheme';
-import type { Vibe } from '@/lib/api';
+import type { Shot } from '@/lib/api';
+
+// Keep Vibe as an alias for backwards compatibility
+type Vibe = Shot;
 
 export interface VibeCardProps {
   vibe: Vibe;
@@ -74,9 +76,6 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
           </div>
           <div className={cn("text-sm flex items-center gap-2 flex-wrap", isNeumorphic ? "text-neumorphic-text-secondary" : "text-white/50")}>
             <span>@{vibe.user.username} · {formatRelativeTime(vibe.createdAt)}</span>
-            {vibe.isLate && vibe.lateByMinutes > 0 && (
-              <LateBadge lateByMinutes={vibe.lateByMinutes} />
-            )}
           </div>
         </div>
       </div>
@@ -261,7 +260,7 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
             {/* Comment button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => router.push(`/vibe/${vibe.id}/comments`)}
+              onClick={() => router.push(`/shot/${vibe.id}/comments`)}
               className={cn(
                 "flex items-center gap-1.5 p-2 transition-colors",
                 isNeumorphic
@@ -290,8 +289,8 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
             onClick={() => {
               if (navigator.share) {
                 navigator.share({
-                  title: 'Check out this vibe!',
-                  url: `${window.location.origin}/vibe/${vibe.id}`,
+                  title: 'Check out this shot!',
+                  url: `${window.location.origin}/shot/${vibe.id}`,
                 });
               }
             }}

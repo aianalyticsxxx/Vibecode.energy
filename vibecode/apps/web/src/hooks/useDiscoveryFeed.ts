@@ -1,12 +1,13 @@
 'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { api, Vibe } from '@/lib/api';
+import { api, Shot } from '@/lib/api';
 
 type SortOption = 'recent' | 'popular';
 
 interface UseDiscoveryFeedReturn {
-  vibes: Vibe[];
+  shots: Shot[];
+  vibes: Shot[]; // Legacy alias
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
@@ -25,9 +26,9 @@ export function useDiscoveryFeed(sort: SortOption = 'recent'): UseDiscoveryFeedR
     fetchNextPage,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['discovery', sort],
+    queryKey: ['shots', 'discovery', sort],
     queryFn: async ({ pageParam }) => {
-      const response = await api.getDiscoveryFeed(pageParam, sort);
+      const response = await api.getFeed(pageParam, sort);
       if (response.error) {
         throw new Error(response.error.message);
       }
@@ -37,10 +38,11 @@ export function useDiscoveryFeed(sort: SortOption = 'recent'): UseDiscoveryFeedR
     getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
   });
 
-  const vibes = data?.pages.flatMap((page) => page?.vibes ?? []) ?? [];
+  const shots = data?.pages.flatMap((page) => page?.shots ?? []) ?? [];
 
   return {
-    vibes,
+    shots,
+    vibes: shots, // Legacy alias
     isLoading,
     isFetchingNextPage,
     hasNextPage: hasNextPage ?? false,

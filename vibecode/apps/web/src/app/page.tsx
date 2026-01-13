@@ -3,13 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useDailyVibe } from '@/hooks/useDailyVibe';
 import { motion } from 'framer-motion';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { hasPostedToday, isLoading: vibeLoading } = useDailyVibe();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Wait for auth to load
@@ -21,18 +19,9 @@ export default function HomePage() {
       return;
     }
 
-    // Wait for vibe status to load
-    if (vibeLoading) return;
-
-    // If user hasn't posted today, redirect to capture
-    if (!hasPostedToday) {
-      router.replace('/capture');
-      return;
-    }
-
-    // Otherwise, go to feed
+    // Go to feed
     router.replace('/feed');
-  }, [authLoading, isAuthenticated, vibeLoading, hasPostedToday, router]);
+  }, [authLoading, isAuthenticated, router]);
 
   // Loading state
   return (
@@ -59,7 +48,7 @@ export default function HomePage() {
         </motion.div>
 
         {/* Loading text */}
-        <h1 className="text-2xl font-bold gradient-text mb-4">VibeCode Energy</h1>
+        <h1 className="text-2xl font-bold gradient-text mb-4">OneShotCoding</h1>
 
         {/* Loading spinner */}
         <div className="flex justify-center">
@@ -82,14 +71,10 @@ export default function HomePage() {
           transition={{ delay: 0.5 }}
         >
           {authLoading
-            ? 'Checking vibes...'
+            ? 'Loading...'
             : !isAuthenticated
             ? 'Redirecting to login...'
-            : vibeLoading
-            ? 'Loading your vibe status...'
-            : hasPostedToday
-            ? 'Opening your feed...'
-            : 'Time to share your vibe...'}
+            : 'Opening your feed...'}
         </motion.p>
       </motion.div>
     </div>

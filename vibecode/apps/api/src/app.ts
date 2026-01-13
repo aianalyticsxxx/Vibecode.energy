@@ -10,14 +10,14 @@ import { authPlugin } from './plugins/auth.js';
 import { s3Plugin } from './plugins/s3.js';
 
 import { authRoutes } from './routes/auth/index.js';
-import { vibeRoutes } from './routes/vibes/index.js';
+import { shotRoutes } from './routes/shots/index.js';
 import { reactionRoutes } from './routes/reactions/index.js';
-import { commentRoutes } from './routes/vibes/comments.js';
+import { commentRoutes } from './routes/shots/comments.js';
 import { userRoutes } from './routes/users/index.js';
 import { followRoutes } from './routes/users/follow.js';
 import { presenceRoutes } from './routes/users/presence.js';
 import { uploadRoutes } from './routes/upload/index.js';
-import { vibecheckRoutes } from './routes/vibecheck/index.js';
+import { challengeRoutes } from './routes/challenges/index.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -45,7 +45,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         allowedOrigins.includes(origin) ||
         origin.endsWith('.railway.app') ||
         origin.endsWith('.up.railway.app') ||
-        origin.endsWith('.vercel.app')
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.oneshotcoding.io')
       ) {
         callback(null, true);
       } else {
@@ -73,7 +74,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register multipart for file uploads
   await app.register(fastifyMultipart, {
     limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB max
+      fileSize: 50 * 1024 * 1024, // 50MB max (increased for video uploads)
       files: 1,
     },
   });
@@ -85,14 +86,14 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register routes
   await app.register(authRoutes, { prefix: '/auth' });
-  await app.register(vibeRoutes, { prefix: '/vibes' });
-  await app.register(reactionRoutes, { prefix: '/vibes' });
-  await app.register(commentRoutes, { prefix: '/vibes' });
+  await app.register(shotRoutes, { prefix: '/shots' });
+  await app.register(reactionRoutes, { prefix: '/shots' });
+  await app.register(commentRoutes, { prefix: '/shots' });
   await app.register(userRoutes, { prefix: '/users' });
   await app.register(followRoutes, { prefix: '/users' });
   await app.register(presenceRoutes, { prefix: '/users' });
   await app.register(uploadRoutes, { prefix: '/upload' });
-  await app.register(vibecheckRoutes, { prefix: '/vibecheck' });
+  await app.register(challengeRoutes, { prefix: '/challenges' });
 
   // Health check endpoint
   app.get('/health', async () => {
