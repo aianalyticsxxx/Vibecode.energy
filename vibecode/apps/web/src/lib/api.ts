@@ -1,7 +1,52 @@
-import { getToken } from './auth';
+import { getToken, setToken, clearAuth } from './auth';
 
 // Use proxy for API calls - rewrites handle routing to the correct backend
 const API_URL = '/api';
+
+// Track if we're currently refreshing to prevent multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Attempt to refresh the access token using the refresh token cookie
+ */
+async function refreshAccessToken(): Promise<boolean> {
+  // If already refreshing, wait for that to complete
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include', // Send refresh_token cookie
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        clearAuth();
+        return false;
+      }
+
+      const data = await response.json();
+      if (data.accessToken) {
+        setToken(data.accessToken);
+        return true;
+      }
+      return false;
+    } catch {
+      clearAuth();
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
 
 export interface ApiError {
   message: string;
@@ -165,11 +210,12 @@ export interface ChallengesResponse {
 }
 
 /**
- * Base fetch wrapper with auth
+ * Base fetch wrapper with auth and automatic token refresh
  */
 async function fetchApi<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryOnAuth = true
 ): Promise<ApiResponse<T>> {
   const token = getToken();
 
@@ -188,6 +234,23 @@ async function fetchApi<T>(
       headers,
       credentials: 'include', // Include cookies for auth
     });
+
+    // Handle 401 - try to refresh token and retry
+    if (response.status === 401 && retryOnAuth && token) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        // Retry the request with new token
+        return fetchApi<T>(endpoint, options, false);
+      }
+      // Refresh failed, return the 401 error
+      return {
+        data: null,
+        error: {
+          message: 'Session expired. Please log in again.',
+          statusCode: 401,
+        },
+      };
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -261,12 +324,13 @@ export function del<T>(endpoint: string): Promise<ApiResponse<T>> {
 }
 
 /**
- * Upload file with multipart form data
+ * Upload file with multipart form data and automatic token refresh
  */
 export async function uploadFile<T>(
   endpoint: string,
   file: File,
-  additionalData?: Record<string, string>
+  additionalData?: Record<string, string>,
+  retryOnAuth = true
 ): Promise<ApiResponse<T>> {
   const token = getToken();
   const formData = new FormData();
@@ -290,6 +354,22 @@ export async function uploadFile<T>(
       body: formData,
       credentials: 'include', // Include cookies for auth
     });
+
+    // Handle 401 - try to refresh token and retry
+    if (response.status === 401 && retryOnAuth && token) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        // Retry the upload with new token
+        return uploadFile<T>(endpoint, file, additionalData, false);
+      }
+      return {
+        data: null,
+        error: {
+          message: 'Session expired. Please log in again.',
+          statusCode: 401,
+        },
+      };
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

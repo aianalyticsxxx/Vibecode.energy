@@ -30,33 +30,55 @@ function formatTerminalTime(date: string | Date): string {
   }) + ' UTC';
 }
 
+// Max lines to show before truncating prompt
+const MAX_PROMPT_LINES = 3;
+const MAX_PROMPT_CHARS = 280;
+
 export function VibeCard({ vibe, className }: VibeCardProps) {
   const router = useRouter();
-  // null = closed, 'prompt' = zoomed to prompt overlay, 'result' = full image view
-  const [expandedView, setExpandedView] = useState<'prompt' | 'result' | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Close modal on Escape key
   useEffect(() => {
-    if (!expandedView) return;
+    if (!isImageModalOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setExpandedView(null);
+        setIsImageModalOpen(false);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [expandedView]);
+  }, [isImageModalOpen]);
 
   // Generate a short ID for the terminal path
   const shortId = vibe.id.substring(0, 7);
+
+  // Check if prompt needs truncation
+  const promptNeedsTruncation = vibe.prompt && (
+    vibe.prompt.length > MAX_PROMPT_CHARS ||
+    vibe.prompt.split('\n').length > MAX_PROMPT_LINES
+  );
+
+  // Get truncated prompt text
+  const getDisplayPrompt = () => {
+    if (!vibe.prompt) return '';
+    if (!promptNeedsTruncation || isExpanded) return vibe.prompt;
+
+    const lines = vibe.prompt.split('\n').slice(0, MAX_PROMPT_LINES);
+    let text = lines.join('\n');
+    if (text.length > MAX_PROMPT_CHARS) {
+      text = text.substring(0, MAX_PROMPT_CHARS);
+    }
+    return text;
+  };
 
   return (
     <motion.div
@@ -96,30 +118,10 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
         </span>
       </div>
 
-      {/* Caption as command */}
-      {vibe.caption && (
-        <div className="px-4 py-3 border-b border-terminal-border">
-          <div className="flex items-start gap-2 font-mono text-sm">
-            <span className="text-terminal-accent flex-shrink-0">$</span>
-            <p className="text-terminal-text">{vibe.caption}</p>
-          </div>
-        </div>
-      )}
-
       {/* Media display - handles both images and videos */}
       {vibe.resultType === 'video' ? (
         // Video content
         <div className="relative bg-terminal-bg">
-          {/* Text prompt display for videos */}
-          {vibe.prompt && (
-            <div className="px-4 py-3 border-b border-terminal-border bg-terminal-bg-elevated">
-              <div className="flex items-start gap-2 font-mono text-sm">
-                <span className="text-terminal-accent flex-shrink-0">$ prompt:</span>
-                <p className="text-terminal-text-secondary">{vibe.prompt}</p>
-              </div>
-            </div>
-          )}
-          {/* Video player */}
           <div className="relative aspect-video">
             <video
               src={vibe.imageUrl}
@@ -130,67 +132,69 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
             {/* Video label */}
             <div className="absolute top-2 left-2 pointer-events-none">
               <span className="bg-terminal-success/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-mono">
-                video output
+                output
               </span>
             </div>
           </div>
         </div>
       ) : (
-        // Image content with separate clickable regions for prompt and result
+        // Image content - clean display, click to expand
         <div className="relative aspect-video bg-terminal-bg">
-          {/* Main image - clicking expands as "result" view */}
           <motion.div
             className="absolute inset-0 cursor-pointer group"
             whileHover={{ scale: 1.003 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setExpandedView('result')}
+            onClick={() => setIsImageModalOpen(true)}
           >
             <Image
               src={vibe.imageUrl}
-              alt={vibe.caption || `Shot by ${vibe.user.displayName}`}
+              alt={vibe.prompt || `Shot by ${vibe.user.displayName}`}
               fill
               className="object-contain"
               sizes="(max-width: 768px) 100vw, 672px"
             />
-            {/* Result label */}
-            <div className="absolute bottom-2 right-2">
+            {/* Output label */}
+            <div className="absolute top-2 left-2 pointer-events-none">
               <span className="bg-terminal-success/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-mono opacity-60 group-hover:opacity-100 transition-opacity">
                 output
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Clickable prompt overlay zone (top-left corner) */}
-          <motion.div
-            className="absolute top-2 left-2 w-[30%] aspect-square cursor-pointer z-10 group/prompt"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpandedView('prompt');
-            }}
-          >
-            {/* Invisible hit area with visible hover effect */}
-            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover/prompt:border-terminal-accent group-hover/prompt:bg-terminal-accent/10 transition-all" />
-            {/* Prompt label that appears on hover */}
-            <div className="absolute -bottom-1 left-0 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
-              <span className="bg-terminal-accent/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-white font-mono">
-                prompt
               </span>
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* Expanded image modal - only for images, not videos */}
+      {/* Prompt section - terminal style */}
+      {vibe.prompt && (
+        <div className="px-4 py-3 bg-terminal-bg-elevated border-t border-terminal-border">
+          <div className="flex items-start gap-2 font-mono text-sm">
+            <span className="text-terminal-accent flex-shrink-0">&gt;</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-terminal-text whitespace-pre-wrap break-words">
+                {getDisplayPrompt()}
+                {promptNeedsTruncation && !isExpanded && '...'}
+              </p>
+              {promptNeedsTruncation && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="mt-1 text-terminal-accent hover:text-terminal-accent/80 text-xs transition-colors"
+                >
+                  {isExpanded ? '[ show less ]' : '[ show more ]'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded image modal */}
       <AnimatePresence>
-        {expandedView && vibe.resultType !== 'video' && (
+        {isImageModalOpen && vibe.resultType !== 'video' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-terminal-bg/98 flex items-center justify-center p-4"
-            onClick={() => setExpandedView(null)}
+            onClick={() => setIsImageModalOpen(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -201,7 +205,7 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
             >
               {/* Close button */}
               <button
-                onClick={() => setExpandedView(null)}
+                onClick={() => setIsImageModalOpen(false)}
                 className="absolute -top-12 right-0 text-terminal-text-secondary hover:text-terminal-text transition-colors flex items-center gap-2 font-mono text-sm"
               >
                 <span>esc to close</span>
@@ -210,68 +214,17 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
                 </svg>
               </button>
 
-              {/* Image display based on view */}
-              <div className={cn(
-                "rounded-lg overflow-hidden border-2 bg-terminal-bg",
-                expandedView === 'prompt' ? "border-terminal-accent" : "border-terminal-success"
-              )}>
-                {expandedView === 'prompt' ? (
-                  // Prompt view: zoom into top-left corner where the prompt overlay lives
-                  <div
-                    className="relative overflow-hidden bg-terminal-bg"
-                    style={{ width: 'min(80vw, 80vh)', height: 'min(80vw, 80vh)' }}
-                  >
-                    <img
-                      src={vibe.imageUrl}
-                      alt={`Prompt for ${vibe.caption || `Shot by ${vibe.user.displayName}`}`}
-                      style={{
-                        position: 'absolute',
-                        top: '-1%',
-                        left: '-1%',
-                        width: '285%',
-                        height: 'auto',
-                        transformOrigin: 'top left',
-                      }}
-                    />
-                  </div>
-                ) : (
-                  // Result view: show the full image at full resolution
-                  <img
-                    src={vibe.imageUrl}
-                    alt={vibe.caption || `Shot by ${vibe.user.displayName}`}
-                    style={{
-                      maxWidth: '90vw',
-                      maxHeight: '80vh',
-                      objectFit: 'contain',
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Toggle between views - terminal button style */}
-              <div className="flex justify-center items-center gap-3 mt-4">
-                <button
-                  onClick={() => setExpandedView('prompt')}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-mono transition-all border",
-                    expandedView === 'prompt'
-                      ? "bg-terminal-accent/20 border-terminal-accent text-terminal-accent"
-                      : "bg-terminal-bg-elevated border-terminal-border text-terminal-text-secondary hover:text-terminal-text"
-                  )}
-                >
-                  ./prompt
-                </button>
-                <button
-                  onClick={() => setExpandedView('result')}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-mono transition-all border",
-                    expandedView === 'result'
-                      ? "bg-terminal-success/20 border-terminal-success text-terminal-success"
-                      : "bg-terminal-bg-elevated border-terminal-border text-terminal-text-secondary hover:text-terminal-text"
-                  )}
-                >
-                  ./output
-                </button>
+              {/* Full image display */}
+              <div className="rounded-lg overflow-hidden border-2 border-terminal-success bg-terminal-bg">
+                <img
+                  src={vibe.imageUrl}
+                  alt={vibe.prompt || `Shot by ${vibe.user.displayName}`}
+                  style={{
+                    maxWidth: '90vw',
+                    maxHeight: '80vh',
+                    objectFit: 'contain',
+                  }}
+                />
               </div>
 
               {/* User info in modal */}
