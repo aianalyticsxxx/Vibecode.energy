@@ -333,6 +333,13 @@ export const api = {
       ...(challengeId ? { challengeId } : {}),
     }),
 
+  // Video upload with text-only prompt
+  createVideoShot: (file: File, prompt: string, caption?: string) =>
+    uploadFile<Shot>('/shots', file, {
+      prompt,
+      ...(caption ? { caption } : {}),
+    }),
+
   deleteShot: (id: string) => del<void>(`/shots/${id}`),
 
   // Following feed

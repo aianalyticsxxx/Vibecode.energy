@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DualCapture, DualCaptureResult } from '@/components/capture/DualCapture';
 import { DualPhotoPreview } from '@/components/capture/DualPhotoPreview';
+import { FileUpload, FileUploadResult } from '@/components/capture/FileUpload';
+import { VideoPreview } from '@/components/capture/VideoPreview';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { useVibes } from '@/hooks/useVibes';
 import { api } from '@/lib/api';
+
+type CaptureMode = 'capture' | 'upload';
 
 // Cross-browser rounded rectangle helper (ctx.roundRect is not supported in all browsers)
 function drawRoundedRect(
@@ -33,7 +37,9 @@ function drawRoundedRect(
 
 export default function CapturePage() {
   const router = useRouter();
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('capture');
   const [capturedPhotos, setCapturedPhotos] = useState<DualCaptureResult | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<FileUploadResult | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { addVibe } = useVibes();
@@ -43,8 +49,14 @@ export default function CapturePage() {
     setError(null);
   }, []);
 
+  const handleFileSelect = useCallback((result: FileUploadResult) => {
+    setUploadedFile(result);
+    setError(null);
+  }, []);
+
   const handleRetake = useCallback(() => {
     setCapturedPhotos(null);
+    setUploadedFile(null);
     setError(null);
   }, []);
 
@@ -106,86 +118,84 @@ export default function CapturePage() {
           throw new Error('Result screenshot has zero dimensions');
         }
 
-        // Set canvas size to result dimensions (or max 1920px)
+        // Vertical layout: prompt on top, result below
         const maxWidth = 1920;
-        const scale = Math.min(1, maxWidth / resultImg.width);
-        canvas.width = resultImg.width * scale;
-        canvas.height = resultImg.height * scale;
+        const padding = 16;
+        const separatorHeight = 40;
+        const labelHeight = 32;
 
-        // Draw result as background (the larger image showing the output)
-        ctx.drawImage(resultImg, 0, 0, canvas.width, canvas.height);
+        // Scale images to fit max width
+        const promptScale = Math.min(1, maxWidth / promptImg.width);
+        const resultScale = Math.min(1, maxWidth / resultImg.width);
 
-        // Draw prompt in top-left corner (overlay showing the input)
-        // Prompt is 35% of canvas - visible but result is still the main focus
-        const overlaySize = Math.min(canvas.width, canvas.height) * 0.35; // 35% - bigger to show the prompt clearly
-        const overlayMargin = 24;
-        const overlayX = overlayMargin;
-        const overlayY = overlayMargin;
-        const radius = 16;
+        const scaledPromptWidth = promptImg.width * promptScale;
+        const scaledPromptHeight = promptImg.height * promptScale;
+        const scaledResultWidth = resultImg.width * resultScale;
+        const scaledResultHeight = resultImg.height * resultScale;
 
-        console.log('Drawing prompt overlay:', {
-          overlaySize,
-          overlayX,
-          overlayY,
-          promptImgWidth: promptImg.width,
-          promptImgHeight: promptImg.height,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height
+        // Canvas width is the max of both scaled images
+        const canvasWidth = Math.max(scaledPromptWidth, scaledResultWidth);
+        // Canvas height: prompt + separator + result
+        const totalHeight = scaledPromptHeight + separatorHeight + scaledResultHeight;
+
+        canvas.width = canvasWidth;
+        canvas.height = totalHeight;
+
+        console.log('Creating vertical composite:', {
+          canvasWidth,
+          totalHeight,
+          scaledPromptHeight,
+          scaledResultHeight,
         });
 
-        // Draw shadow behind prompt overlay
+        // Fill background with terminal dark color
+        ctx.fillStyle = '#0D0D0D';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw prompt image at top (centered if narrower than canvas)
+        const promptX = (canvasWidth - scaledPromptWidth) / 2;
+        ctx.drawImage(promptImg, promptX, 0, scaledPromptWidth, scaledPromptHeight);
+
+        // Draw prompt label overlay at bottom of prompt
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-        ctx.fillStyle = 'black';
-        drawRoundedRect(ctx, overlayX, overlayY, overlaySize, overlaySize, radius);
+        ctx.fillStyle = 'rgba(217, 119, 6, 0.9)'; // terminal-accent (orange)
+        drawRoundedRect(ctx, padding, scaledPromptHeight - labelHeight - padding, 120, labelHeight, 6);
         ctx.fill();
+        ctx.font = 'bold 14px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#F5F5F5';
+        ctx.fillText('$ prompt', padding + 12, scaledPromptHeight - padding - 10);
         ctx.restore();
 
-        // Draw prompt with rounded corners
-        ctx.save();
-        drawRoundedRect(ctx, overlayX, overlayY, overlaySize, overlaySize, radius);
-        ctx.clip();
+        // Draw separator bar
+        const separatorY = scaledPromptHeight;
+        ctx.fillStyle = '#171717'; // terminal-bg-elevated
+        ctx.fillRect(0, separatorY, canvasWidth, separatorHeight);
 
-        // Calculate crop to fit square (center crop)
-        const promptAspect = promptImg.width / promptImg.height;
-        let sx = 0, sy = 0, sw = promptImg.width, sh = promptImg.height;
-        if (promptAspect > 1) {
-          sw = promptImg.height;
-          sx = (promptImg.width - sw) / 2;
-        } else {
-          sh = promptImg.width;
-          sy = (promptImg.height - sh) / 2;
-        }
-
-        ctx.drawImage(promptImg, sx, sy, sw, sh, overlayX, overlayY, overlaySize, overlaySize);
-        console.log('Prompt drawn to canvas at', overlayX, overlayY, 'size', overlaySize);
-        ctx.restore();
-
-        // Add purple border around prompt (to indicate it's the input)
-        ctx.strokeStyle = '#9333ea'; // purple-600 (vibe-purple)
-        ctx.lineWidth = 4;
-        drawRoundedRect(ctx, overlayX, overlayY, overlaySize, overlaySize, radius);
+        // Draw separator line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; // terminal-border
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, separatorY);
+        ctx.lineTo(canvasWidth, separatorY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, separatorY + separatorHeight);
+        ctx.lineTo(canvasWidth, separatorY + separatorHeight);
         ctx.stroke();
 
-        // Add small "PROMPT" label
+        // Draw result image below separator (centered if narrower than canvas)
+        const resultX = (canvasWidth - scaledResultWidth) / 2;
+        const resultY = separatorY + separatorHeight;
+        ctx.drawImage(resultImg, resultX, resultY, scaledResultWidth, scaledResultHeight);
+
+        // Draw result label overlay at top of result
         ctx.save();
-        ctx.font = 'bold 14px system-ui, sans-serif';
-        const labelWidth = ctx.measureText('💬 PROMPT').width + 12;
-        const labelHeight = 22;
-        const labelX = overlayX;
-        const labelY = overlayY + overlaySize + 6;
-
-        // Label background
-        ctx.fillStyle = 'rgba(147, 51, 234, 0.9)'; // purple-600
-        drawRoundedRect(ctx, labelX, labelY, labelWidth, labelHeight, 6);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.9)'; // terminal-success (green)
+        drawRoundedRect(ctx, padding, resultY + padding, 120, labelHeight, 6);
         ctx.fill();
-
-        // Label text
-        ctx.fillStyle = 'white';
-        ctx.fillText('💬 PROMPT', labelX + 6, labelY + 16);
+        ctx.font = 'bold 14px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#F5F5F5';
+        ctx.fillText('> output', padding + 12, resultY + padding + 22);
         ctx.restore();
 
         // Clean up URLs
@@ -236,6 +246,44 @@ export default function CapturePage() {
     [capturedPhotos, addVibe, router]
   );
 
+  // Handle video/image file upload post
+  const handleVideoPost = useCallback(
+    async (prompt: string, caption: string) => {
+      if (!uploadedFile) return;
+
+      setIsPosting(true);
+      setError(null);
+
+      try {
+        const { data, error: apiError } = await api.createVideoShot(
+          uploadedFile.file,
+          prompt,
+          caption || undefined
+        );
+
+        if (apiError) {
+          setError(apiError.message);
+          return;
+        }
+
+        if (data) {
+          addVibe(data);
+          router.push('/feed');
+        }
+      } catch (err) {
+        console.error('Failed to upload:', err);
+        setError('Failed to share. Please try again.');
+      } finally {
+        setIsPosting(false);
+      }
+    },
+    [uploadedFile, addVibe, router]
+  );
+
+  // Determine what content is ready to preview
+  const hasContent = capturedPhotos || uploadedFile;
+  const isVideoUpload = uploadedFile?.type === 'video';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -244,15 +292,49 @@ export default function CapturePage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="text-2xl font-bold text-terminal-text font-mono mb-2">
           Share your shot
         </h1>
-        <p className="text-white/60">
-          {capturedPhotos
-            ? 'Nice result! Add a caption or retake.'
-            : 'Capture prompt → then the result'}
+        <p className="text-terminal-text-secondary font-mono text-sm">
+          {hasContent
+            ? isVideoUpload
+              ? 'Add a prompt for your video'
+              : 'Nice result! Add a caption or retake.'
+            : captureMode === 'capture'
+              ? 'Capture prompt → then the result'
+              : 'Upload an image or video'}
         </p>
       </motion.div>
+
+      {/* Mode toggle - only show when no content captured yet */}
+      {!hasContent && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center gap-2"
+        >
+          <button
+            onClick={() => setCaptureMode('capture')}
+            className={`px-4 py-2 rounded-lg border font-mono text-sm transition-all ${
+              captureMode === 'capture'
+                ? 'bg-terminal-accent/20 border-terminal-accent text-terminal-accent'
+                : 'border-terminal-border text-terminal-text-secondary hover:text-terminal-text hover:border-terminal-border-bright'
+            }`}
+          >
+            --capture
+          </button>
+          <button
+            onClick={() => setCaptureMode('upload')}
+            className={`px-4 py-2 rounded-lg border font-mono text-sm transition-all ${
+              captureMode === 'upload'
+                ? 'bg-terminal-accent/20 border-terminal-accent text-terminal-accent'
+                : 'border-terminal-border text-terminal-text-secondary hover:text-terminal-text hover:border-terminal-border-bright'
+            }`}
+          >
+            --upload
+          </button>
+        </motion.div>
+      )}
 
       {/* Error message */}
       <AnimatePresence>
@@ -262,18 +344,19 @@ export default function CapturePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <GlassPanel className="bg-red-500/20 border-red-500/30 text-center">
-              <p className="text-red-200">{error}</p>
+            <GlassPanel className="bg-terminal-error/20 border-terminal-error/30 text-center">
+              <p className="text-terminal-error font-mono">{error}</p>
             </GlassPanel>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Dual Capture or Preview */}
+      {/* Content area */}
       <AnimatePresence mode="wait">
-        {capturedPhotos ? (
+        {/* Screenshot captured - show preview */}
+        {capturedPhotos && (
           <motion.div
-            key="preview"
+            key="screenshot-preview"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -285,28 +368,71 @@ export default function CapturePage() {
               isPosting={isPosting}
             />
           </motion.div>
-        ) : (
+        )}
+
+        {/* Video uploaded - show video preview */}
+        {uploadedFile?.type === 'video' && (
           <motion.div
-            key="capture"
+            key="video-preview"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <VideoPreview
+              videoUrl={uploadedFile.previewUrl}
+              onPost={handleVideoPost}
+              onRetake={handleRetake}
+              isPosting={isPosting}
+            />
+          </motion.div>
+        )}
+
+        {/* Image uploaded - for now, show same as video but could be different */}
+        {uploadedFile?.type === 'image' && (
+          <motion.div
+            key="image-preview"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <VideoPreview
+              videoUrl={uploadedFile.previewUrl}
+              onPost={handleVideoPost}
+              onRetake={handleRetake}
+              isPosting={isPosting}
+            />
+          </motion.div>
+        )}
+
+        {/* No content yet - show capture or upload UI */}
+        {!hasContent && (
+          <motion.div
+            key="input"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
           >
-            <DualCapture onCapture={handleCapture} />
+            {captureMode === 'capture' ? (
+              <DualCapture onCapture={handleCapture} />
+            ) : (
+              <FileUpload onFileSelect={handleFileSelect} />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Tips */}
-      {!capturedPhotos && (
+      {!hasContent && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
           className="text-center"
         >
-          <p className="text-white/40 text-sm">
-            Show the prompt 💬 → then the result ✨
+          <p className="text-terminal-text-dim text-sm font-mono">
+            {captureMode === 'capture'
+              ? 'Screenshot the prompt, then the result'
+              : 'Supports images and videos up to 50MB'}
           </p>
         </motion.div>
       )}

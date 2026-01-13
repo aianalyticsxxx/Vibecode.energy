@@ -106,54 +106,85 @@ export function VibeCard({ vibe, className }: VibeCardProps) {
         </div>
       )}
 
-      {/* Image with separate clickable regions for prompt and result */}
-      <div className="relative aspect-video bg-terminal-bg">
-        {/* Main image - clicking expands as "result" view */}
-        <motion.div
-          className="absolute inset-0 cursor-pointer group"
-          whileHover={{ scale: 1.003 }}
-          transition={{ duration: 0.2 }}
-          onClick={() => setExpandedView('result')}
-        >
-          <Image
-            src={vibe.imageUrl}
-            alt={vibe.caption || `Shot by ${vibe.user.displayName}`}
-            fill
-            className="object-contain"
-            sizes="(max-width: 768px) 100vw, 672px"
-          />
-          {/* Result label */}
-          <div className="absolute bottom-2 right-2">
-            <span className="bg-terminal-success/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-mono opacity-60 group-hover:opacity-100 transition-opacity">
-              output
-            </span>
+      {/* Media display - handles both images and videos */}
+      {vibe.resultType === 'video' ? (
+        // Video content
+        <div className="relative bg-terminal-bg">
+          {/* Text prompt display for videos */}
+          {vibe.prompt && (
+            <div className="px-4 py-3 border-b border-terminal-border bg-terminal-bg-elevated">
+              <div className="flex items-start gap-2 font-mono text-sm">
+                <span className="text-terminal-accent flex-shrink-0">$ prompt:</span>
+                <p className="text-terminal-text-secondary">{vibe.prompt}</p>
+              </div>
+            </div>
+          )}
+          {/* Video player */}
+          <div className="relative aspect-video">
+            <video
+              src={vibe.imageUrl}
+              controls
+              className="w-full h-full object-contain bg-terminal-bg"
+              preload="metadata"
+            />
+            {/* Video label */}
+            <div className="absolute top-2 left-2 pointer-events-none">
+              <span className="bg-terminal-success/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-mono">
+                video output
+              </span>
+            </div>
           </div>
-        </motion.div>
+        </div>
+      ) : (
+        // Image content with separate clickable regions for prompt and result
+        <div className="relative aspect-video bg-terminal-bg">
+          {/* Main image - clicking expands as "result" view */}
+          <motion.div
+            className="absolute inset-0 cursor-pointer group"
+            whileHover={{ scale: 1.003 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setExpandedView('result')}
+          >
+            <Image
+              src={vibe.imageUrl}
+              alt={vibe.caption || `Shot by ${vibe.user.displayName}`}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 672px"
+            />
+            {/* Result label */}
+            <div className="absolute bottom-2 right-2">
+              <span className="bg-terminal-success/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white font-mono opacity-60 group-hover:opacity-100 transition-opacity">
+                output
+              </span>
+            </div>
+          </motion.div>
 
-        {/* Clickable prompt overlay zone (top-left corner) */}
-        <motion.div
-          className="absolute top-2 left-2 w-[30%] aspect-square cursor-pointer z-10 group/prompt"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpandedView('prompt');
-          }}
-        >
-          {/* Invisible hit area with visible hover effect */}
-          <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover/prompt:border-terminal-accent group-hover/prompt:bg-terminal-accent/10 transition-all" />
-          {/* Prompt label that appears on hover */}
-          <div className="absolute -bottom-1 left-0 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
-            <span className="bg-terminal-accent/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-white font-mono">
-              prompt
-            </span>
-          </div>
-        </motion.div>
-      </div>
+          {/* Clickable prompt overlay zone (top-left corner) */}
+          <motion.div
+            className="absolute top-2 left-2 w-[30%] aspect-square cursor-pointer z-10 group/prompt"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedView('prompt');
+            }}
+          >
+            {/* Invisible hit area with visible hover effect */}
+            <div className="absolute inset-0 rounded-lg border-2 border-transparent group-hover/prompt:border-terminal-accent group-hover/prompt:bg-terminal-accent/10 transition-all" />
+            {/* Prompt label that appears on hover */}
+            <div className="absolute -bottom-1 left-0 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
+              <span className="bg-terminal-accent/90 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] text-white font-mono">
+                prompt
+              </span>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
-      {/* Expanded image modal */}
+      {/* Expanded image modal - only for images, not videos */}
       <AnimatePresence>
-        {expandedView && (
+        {expandedView && vibe.resultType !== 'video' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
