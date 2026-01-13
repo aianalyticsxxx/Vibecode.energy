@@ -43,26 +43,26 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const glassVariants = {
       gradient:
-        'bg-gradient-vibe text-white shadow-glass hover:shadow-glow',
+        'bg-gradient-vibe text-white shadow-terminal hover:shadow-glow hover:brightness-110',
       glass:
-        'bg-glass-white text-white border border-glass-border backdrop-blur-glass shadow-glass-sm hover:bg-glass-white-lighter',
+        'bg-terminal-bg-elevated text-terminal-text border border-terminal-border shadow-terminal-sm hover:border-terminal-border-bright',
       ghost:
-        'bg-transparent text-white/80 hover:text-white hover:bg-white/10',
+        'bg-transparent text-terminal-text-secondary hover:text-terminal-text hover:bg-terminal-bg-elevated',
     };
 
     const neuVariants = {
       gradient:
-        'bg-gradient-vibe text-white shadow-neu-sm hover:shadow-neu active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2)]',
+        'bg-gradient-vibe text-white shadow-terminal hover:shadow-glow hover:brightness-110',
       glass:
-        'bg-neumorphic-base text-neumorphic-text shadow-neu-sm hover:shadow-neu active:shadow-neu-inset',
+        'bg-terminal-bg-elevated text-terminal-text border border-terminal-border shadow-terminal-sm hover:border-terminal-border-bright',
       ghost:
-        'bg-transparent text-neumorphic-text hover:bg-neumorphic-dark/10',
+        'bg-transparent text-terminal-text-secondary hover:text-terminal-text hover:bg-terminal-bg-elevated',
     };
 
     const sizes = {
-      sm: 'py-2 px-4 text-sm rounded-lg',
-      md: 'py-3 px-6 text-base rounded-xl',
-      lg: 'py-4 px-8 text-lg rounded-2xl',
+      sm: 'py-2 px-4 text-sm rounded-md',
+      md: 'py-2.5 px-5 text-base rounded-md',
+      lg: 'py-3 px-6 text-lg rounded-lg',
     };
 
     const isNeumorphic = effectiveTheme === 'neumorphic';
@@ -74,9 +74,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
         className={cn(
-          'font-semibold transition-all duration-150 ease-out',
+          'font-medium transition-all duration-150 ease-out',
           'inline-flex items-center justify-center gap-2',
-          'focus:outline-none focus:ring-2 focus:ring-vibe-purple/50',
+          'focus:outline-none focus:ring-2 focus:ring-terminal-accent/30',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           currentVariants[variant],
           sizes[size],

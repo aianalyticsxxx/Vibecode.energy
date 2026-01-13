@@ -15,15 +15,24 @@ export function GradientBackground({
     <div
       className={cn(
         'fixed inset-0 min-h-screen overflow-hidden',
-        'bg-black',
+        'bg-terminal-bg',
         className
       )}
     >
-      {/* Subtle noise texture for depth */}
+      {/* Subtle dot pattern for terminal feel */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }}
+      />
+
+      {/* Subtle gradient overlay */}
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(217,119,6,0.08) 0%, transparent 60%)',
         }}
       />
 

@@ -37,8 +37,8 @@ export default function LoginPage() {
   // Loading state
   if (isLoading || isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-        <div className="w-8 h-8 border-2 border-bereal-yellow border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-terminal-bg">
+        <div className="w-8 h-8 border-2 border-terminal-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -49,35 +49,32 @@ export default function LoginPage() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse at 30% 20%, #0f1020 0%, #0a0a0f 50%, #050508 100%)',
+          background: 'radial-gradient(ellipse at 30% 20%, #171717 0%, #0D0D0D 50%, #050505 100%)',
         }}
       />
 
-      {/* Subtle grid overlay */}
+      {/* Subtle grid overlay - dot pattern for terminal feel */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px',
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
         }}
       />
 
-      {/* Floating accent orbs */}
+      {/* Floating accent orbs - warm orange tones */}
       <div
-        className="absolute w-[600px] h-[600px] rounded-full opacity-20 blur-[120px]"
+        className="absolute w-[600px] h-[600px] rounded-full opacity-15 blur-[120px]"
         style={{
-          background: 'radial-gradient(circle, #00ffff 0%, transparent 70%)',
+          background: 'radial-gradient(circle, #D97706 0%, transparent 70%)',
           top: '-200px',
           left: '-200px',
         }}
       />
       <div
-        className="absolute w-[500px] h-[500px] rounded-full opacity-15 blur-[100px]"
+        className="absolute w-[500px] h-[500px] rounded-full opacity-10 blur-[100px]"
         style={{
-          background: 'radial-gradient(circle, #ff00ff 0%, transparent 70%)',
+          background: 'radial-gradient(circle, #F59E0B 0%, transparent 70%)',
           bottom: '-150px',
           right: '-150px',
         }}
@@ -106,7 +103,7 @@ export default function LoginPage() {
         transition={{ delay: 1.5, duration: 1 }}
         className="absolute top-6 left-6 pointer-events-none"
       >
-        <span className="text-white/10 text-xs font-mono tracking-widest uppercase">
+        <span className="text-terminal-text-dim/30 text-xs font-mono tracking-widest uppercase">
           OneShotCoding v1.0
         </span>
       </motion.div>

@@ -13,10 +13,10 @@ export interface BottomNavProps {
 const navItems = [
   {
     href: '/feed',
-    label: 'Feed',
+    label: 'feed',
     icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        className={cn('w-5 h-5', active ? 'text-terminal-accent' : 'text-terminal-text-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -32,10 +32,10 @@ const navItems = [
   },
   {
     href: '/discover',
-    label: 'Discover',
+    label: 'discover',
     icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        className={cn('w-5 h-5', active ? 'text-terminal-accent' : 'text-terminal-text-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -51,10 +51,10 @@ const navItems = [
   },
   {
     href: '/capture',
-    label: 'Capture',
+    label: 'ship',
     icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        className={cn('w-5 h-5', active ? 'text-terminal-accent' : 'text-terminal-text-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -75,10 +75,10 @@ const navItems = [
   },
   {
     href: '/profile',
-    label: 'Profile',
+    label: 'profile',
     icon: (active: boolean) => (
       <svg
-        className={cn('w-6 h-6', active ? 'text-white' : 'text-bereal-white-dim')}
+        className={cn('w-5 h-5', active ? 'text-terminal-accent' : 'text-terminal-text-dim')}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -116,12 +116,12 @@ export function BottomNav({ className }: BottomNavProps) {
     <nav
       className={cn(
         'fixed bottom-0 left-0 right-0 z-50',
-        'bg-black/95 backdrop-blur-sm border-t border-bereal-gray-light',
+        'bg-terminal-bg/95 backdrop-blur-sm border-t border-terminal-border',
         'safe-bottom',
         className
       )}
     >
-      <div className="max-w-lg mx-auto px-4 py-2">
+      <div className="max-w-lg mx-auto px-2 py-2">
         <div className="flex items-center justify-around">
           {navItems.map((item) => {
             const active = isActive(item.href);
@@ -129,7 +129,12 @@ export function BottomNav({ className }: BottomNavProps) {
               <Link
                 key={item.href}
                 href={getHref(item.href)}
-                className="relative flex flex-col items-center py-2 px-4"
+                className={cn(
+                  'relative flex flex-col items-center py-2 px-3 rounded-md transition-colors',
+                  active
+                    ? 'bg-terminal-accent/10'
+                    : 'hover:bg-terminal-bg-elevated'
+                )}
               >
                 <motion.div
                   whileTap={{ scale: 0.9 }}
@@ -139,18 +144,18 @@ export function BottomNav({ className }: BottomNavProps) {
                   {active && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-terminal-accent rounded-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     />
                   )}
                 </motion.div>
                 <span
                   className={cn(
-                    'text-xs mt-1 transition-colors',
-                    active ? 'text-white font-medium' : 'text-bereal-white-dim'
+                    'text-xs mt-1 font-mono transition-colors',
+                    active ? 'text-terminal-accent' : 'text-terminal-text-dim'
                   )}
                 >
-                  {item.label}
+                  ./{item.label}
                 </span>
               </Link>
             );

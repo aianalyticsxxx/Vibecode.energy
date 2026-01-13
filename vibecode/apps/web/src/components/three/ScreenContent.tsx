@@ -12,9 +12,9 @@ export function ScreenContent() {
       style={{
         width: '100%',
         height: '100%',
-        background: 'linear-gradient(145deg, #0a0a12 0%, #0f0f1a 50%, #0a0a12 100%)',
+        background: 'linear-gradient(180deg, #171717 0%, #0D0D0D 100%)',
         fontFamily: '"JetBrains Mono", "SF Mono", "Fira Code", monospace',
-        color: '#ffffff',
+        color: '#F5F5F5',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -25,12 +25,13 @@ export function ScreenContent() {
         overflow: 'hidden',
       }}
     >
-      {/* Scanline effect */}
+      {/* Dot matrix pattern */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)',
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
+          backgroundSize: '16px 16px',
           pointerEvents: 'none',
           zIndex: 10,
         }}
@@ -41,31 +42,44 @@ export function ScreenContent() {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)',
           pointerEvents: 'none',
           zIndex: 5,
         }}
       />
 
-      {/* Logo */}
+      {/* Terminal Prompt Logo */}
       <div
         style={{
-          fontSize: '36px',
-          marginBottom: '8px',
-          filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.5))',
+          fontSize: '32px',
+          marginBottom: '4px',
+          color: '#D97706',
+          textShadow: '0 0 20px rgba(217,119,6,0.5)',
         }}
       >
-        ◎
+        &gt;_
+      </div>
+
+      {/* Command line style title */}
+      <div
+        style={{
+          fontSize: '10px',
+          color: '#737373',
+          margin: '0 0 8px 0',
+          letterSpacing: '1px',
+        }}
+      >
+        $ welcome to
       </div>
 
       {/* Title */}
       <h1
         style={{
-          fontSize: '28px',
-          fontWeight: 900,
+          fontSize: '26px',
+          fontWeight: 700,
           margin: '0 0 4px 0',
           letterSpacing: '-0.5px',
-          textShadow: '0 0 20px rgba(255,255,0,0.3)',
+          color: '#F5F5F5',
         }}
       >
         OneShotCoding
@@ -74,14 +88,13 @@ export function ScreenContent() {
       {/* Tagline */}
       <p
         style={{
-          fontSize: '11px',
-          color: 'rgba(255,255,255,0.5)',
-          margin: '0 0 20px 0',
-          letterSpacing: '2px',
-          textTransform: 'uppercase',
+          fontSize: '10px',
+          color: '#737373',
+          margin: '0 0 24px 0',
+          letterSpacing: '1px',
         }}
       >
-        Your daily coding vibe
+        ship your daily build
       </p>
 
       {/* GitHub Login Button */}
@@ -93,26 +106,26 @@ export function ScreenContent() {
           justifyContent: 'center',
           gap: '10px',
           width: '100%',
-          maxWidth: '260px',
+          maxWidth: '240px',
           padding: '12px 20px',
-          background: 'linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%)',
-          color: '#000000',
+          background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+          color: '#ffffff',
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '6px',
           fontSize: '13px',
-          fontWeight: 700,
+          fontWeight: 600,
           fontFamily: 'inherit',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3), 0 0 30px rgba(255,255,255,0.1)',
+          boxShadow: '0 4px 15px rgba(217,119,6,0.3)',
         }}
         onMouseOver={(e) => {
           e.currentTarget.style.transform = 'scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.2)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(217,119,6,0.4)';
         }}
         onMouseOut={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3), 0 0 30px rgba(255,255,255,0.1)';
+          e.currentTarget.style.boxShadow = '0 4px 15px rgba(217,119,6,0.3)';
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -125,17 +138,16 @@ export function ScreenContent() {
         Continue with GitHub
       </button>
 
-      {/* Tagline */}
+      {/* Community tagline */}
       <div
         style={{
           marginTop: '20px',
           fontSize: '9px',
-          color: 'rgba(255,255,255,0.4)',
-          textTransform: 'uppercase',
+          color: '#737373',
           letterSpacing: '1px',
         }}
       >
-        Largest vibecoding community
+        join the dev community
       </div>
 
       {/* Footer */}
@@ -147,14 +159,14 @@ export function ScreenContent() {
           right: 0,
           textAlign: 'center',
           fontSize: '7px',
-          color: 'rgba(255,255,255,0.25)',
+          color: 'rgba(255,255,255,0.2)',
           margin: 0,
         }}
       >
         By continuing, you agree to our Terms of Service
       </p>
 
-      {/* Accent glow effects */}
+      {/* Accent glow effects - warm orange */}
       <div
         style={{
           position: 'absolute',
@@ -162,7 +174,7 @@ export function ScreenContent() {
           left: '-30%',
           width: '60%',
           height: '100%',
-          background: 'radial-gradient(ellipse, rgba(0,255,255,0.1) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse, rgba(217,119,6,0.08) 0%, transparent 60%)',
           pointerEvents: 'none',
         }}
       />
@@ -173,7 +185,7 @@ export function ScreenContent() {
           right: '-30%',
           width: '60%',
           height: '100%',
-          background: 'radial-gradient(ellipse, rgba(255,0,255,0.1) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse, rgba(245,158,11,0.06) 0%, transparent 60%)',
           pointerEvents: 'none',
         }}
       />

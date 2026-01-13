@@ -16,27 +16,35 @@ export function Header({ className }: HeaderProps) {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50',
-        'bg-black/95 backdrop-blur-sm border-b border-bereal-gray-light',
+        'bg-terminal-bg/95 backdrop-blur-sm border-b border-terminal-border',
         'safe-top',
         className
       )}
     >
-      <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/feed" className="flex items-center gap-2">
-          <span className="text-2xl">⚡</span>
-          <span className="font-black text-xl text-white">VibeCode</span>
+          <span className="font-mono text-xl text-terminal-accent">&gt;_</span>
+          <span className="font-semibold text-lg text-terminal-text">OneShotCoding</span>
         </Link>
 
         {/* User Avatar */}
         <div className="flex items-center gap-3">
           {user && (
-            <Link href={`/profile/${user.username}`}>
+            <Link
+              href={`/profile/${user.username}`}
+              className="flex items-center gap-2 py-1.5 px-3 rounded-md
+                         bg-terminal-bg-elevated border border-terminal-border
+                         hover:border-terminal-border-bright transition-colors"
+            >
               <Avatar
                 src={user.avatarUrl}
                 alt={user.displayName}
                 size="sm"
               />
+              <span className="font-mono text-sm text-terminal-text-secondary hidden sm:inline">
+                @{user.username}
+              </span>
             </Link>
           )}
         </div>

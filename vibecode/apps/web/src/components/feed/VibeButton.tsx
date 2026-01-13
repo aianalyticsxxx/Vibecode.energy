@@ -59,11 +59,12 @@ export function VibeButton({
     <button
       onClick={handleSparkle}
       className={cn(
-        'relative flex items-center gap-2 py-2 px-3 rounded-full',
-        'transition-all duration-200',
+        'relative flex items-center gap-1.5 py-1.5 px-3 rounded-md',
+        'transition-all duration-200 font-mono text-sm',
+        'bg-terminal-bg-elevated border',
         hasSparkled
-          ? 'bg-vibe-purple/20 text-vibe-purple'
-          : 'text-white/60 hover:text-white hover:bg-white/10',
+          ? 'border-terminal-accent text-terminal-accent bg-terminal-accent/10'
+          : 'border-terminal-border text-terminal-text-secondary hover:text-terminal-text hover:border-terminal-border-bright',
         className
       )}
     >
@@ -74,11 +75,11 @@ export function VibeButton({
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
         <motion.span
-          className="text-xl"
+          className="text-base"
           animate={isAnimating ? { rotate: [0, 20, -20, 0] } : {}}
           transition={{ duration: 0.4 }}
         >
-          {hasSparkled ? '✨' : '✨'}
+          ✨
         </motion.span>
 
         {/* Particle explosion */}
@@ -86,7 +87,7 @@ export function VibeButton({
           {particles.map((i) => (
             <motion.div
               key={i}
-              className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-vibe-purple"
+              className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-terminal-accent"
               initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
               animate={{
                 x: Math.cos((i * Math.PI) / 4) * 30,
@@ -109,7 +110,7 @@ export function VibeButton({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 10, opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="text-sm font-medium tabular-nums"
+          className="tabular-nums"
         >
           {sparkleCount > 0 ? sparkleCount : ''}
         </motion.span>
@@ -119,7 +120,7 @@ export function VibeButton({
       <AnimatePresence>
         {isAnimating && (
           <motion.div
-            className="absolute inset-0 rounded-full bg-vibe-purple/30"
+            className="absolute inset-0 rounded-md bg-terminal-accent/20"
             initial={{ scale: 0.5, opacity: 1 }}
             animate={{ scale: 2, opacity: 0 }}
             exit={{ opacity: 0 }}
