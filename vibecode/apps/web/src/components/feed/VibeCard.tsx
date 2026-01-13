@@ -23,11 +23,16 @@ export interface VibeCardProps {
 // Format timestamp for terminal header
 function formatTerminalTime(date: string | Date): string {
   const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
+  const dateStr = d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const timeStr = d.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }) + ' UTC';
+  });
+  return `${dateStr} ${timeStr} UTC`;
 }
 
 // Max lines to show before truncating prompt
