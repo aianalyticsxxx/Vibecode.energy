@@ -91,8 +91,27 @@ function useAuthState(): AuthContextValue {
 
   const login = useCallback(async (token: string) => {
     setToken(token);
-    await refreshUser();
-  }, [refreshUser]);
+    // Fetch user data directly instead of relying on refreshUser
+    // to avoid stale closure issues
+    setIsLoading(true);
+    try {
+      const { data, error } = await api.getMe();
+      if (error || !data) {
+        console.error('[useAuth] Login failed - getMe error:', error);
+        clearAuth();
+        setUserState(null);
+      } else {
+        setUser(data.user);
+        setUserState(data.user);
+      }
+    } catch (error) {
+      console.error('[useAuth] Login failed - exception:', error);
+      clearAuth();
+      setUserState(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const logout = useCallback(() => {
     clearAuth();
