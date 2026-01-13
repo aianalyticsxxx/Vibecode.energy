@@ -23,15 +23,32 @@ export interface VibeCardProps {
 // Format timestamp for terminal header
 function formatTerminalTime(date: string | Date): string {
   const d = new Date(date);
-  const dateStr = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  const now = new Date();
+
+  // Get dates at midnight for comparison
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const postDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
   const timeStr = d.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   });
+
+  let dateStr: string;
+  if (postDate.getTime() === today.getTime()) {
+    dateStr = 'Today';
+  } else if (postDate.getTime() === yesterday.getTime()) {
+    dateStr = 'Yesterday';
+  } else {
+    dateStr = d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
   return `${dateStr} ${timeStr} UTC`;
 }
 
