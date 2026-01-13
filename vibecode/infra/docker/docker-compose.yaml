@@ -1,39 +1,39 @@
 services:
   postgres:
     image: postgres:15
-    container_name: vibecode-postgres
+    container_name: oneshotcoding-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: vibecode
-      POSTGRES_PASSWORD: vibecode
-      POSTGRES_DB: vibecode
+      POSTGRES_USER: oneshotcoding
+      POSTGRES_PASSWORD: oneshotcoding
+      POSTGRES_DB: oneshotcoding
     ports:
       - "5433:5432"
     volumes:
-      - vibecode-postgres-data:/var/lib/postgresql/data
+      - oneshotcoding-postgres-data:/var/lib/postgresql/data
     networks:
-      - vibecode-network
+      - oneshotcoding-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode"]
+      test: ["CMD-SHELL", "pg_isready -U oneshotcoding -d oneshotcoding"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    container_name: vibecode-minio
+    container_name: oneshotcoding-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: vibecode
-      MINIO_ROOT_PASSWORD: vibecode123
+      MINIO_ROOT_USER: oneshotcoding
+      MINIO_ROOT_PASSWORD: oneshotcoding123
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - vibecode-minio-data:/data
+      - oneshotcoding-minio-data:/data
     networks:
-      - vibecode-network
+      - oneshotcoding-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -41,9 +41,9 @@ services:
       retries: 3
 
 volumes:
-  vibecode-postgres-data:
-  vibecode-minio-data:
+  oneshotcoding-postgres-data:
+  oneshotcoding-minio-data:
 
 networks:
-  vibecode-network:
+  oneshotcoding-network:
     driver: bridge

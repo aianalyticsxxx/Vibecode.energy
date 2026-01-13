@@ -21,7 +21,7 @@ export function Header({ className }: HeaderProps) {
         className
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/feed" className="flex items-center gap-2">
           <span className="font-mono text-xl text-terminal-accent">&gt;_</span>

@@ -37,7 +37,7 @@ export default function MainLayout({
   return (
     <div className="min-h-screen pb-20 pt-16">
       <Header />
-      <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
+      <main>{children}</main>
       <BottomNav />
     </div>
   );

@@ -45,7 +45,7 @@ const nextConfig = {
     // Use Railway API for production, localhost for development
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://vibecodeenergy-production.up.railway.app'
+        ? 'https://oneshotcoding-production.up.railway.app'
         : 'http://localhost:4000');
     return [
       {

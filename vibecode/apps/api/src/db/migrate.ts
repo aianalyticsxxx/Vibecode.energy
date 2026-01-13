@@ -14,9 +14,9 @@ const __dirname = path.dirname(__filename);
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'vibecode',
-  user: process.env.DB_USER || 'vibecode',
-  password: process.env.DB_PASSWORD || 'vibecode',
+  database: process.env.DB_NAME || 'oneshotcoding',
+  user: process.env.DB_USER || 'oneshotcoding',
+  password: process.env.DB_PASSWORD || 'oneshotcoding',
 });
 
 interface Migration {

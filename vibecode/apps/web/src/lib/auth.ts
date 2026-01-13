@@ -1,5 +1,5 @@
-const TOKEN_KEY = 'vibecode_token';
-const USER_KEY = 'vibecode_user';
+const TOKEN_KEY = 'oneshotcoding_token';
+const USER_KEY = 'oneshotcoding_user';
 
 export interface User {
   id: string;
@@ -82,7 +82,7 @@ export function getGitHubOAuthUrl(): string {
   // because GitHub redirects back to this URL
   const apiUrl = process.env.NEXT_PUBLIC_AUTH_URL ||
     (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? 'https://vibecodeenergy-production.up.railway.app'
+      ? 'https://oneshotcoding-production.up.railway.app'
       : 'http://localhost:4000');
   return `${apiUrl}/auth/github`;
 }

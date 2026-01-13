@@ -7,9 +7,9 @@ config();
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'vibecode',
-  user: process.env.DB_USER || 'vibecode',
-  password: process.env.DB_PASSWORD || 'vibecode',
+  database: process.env.DB_NAME || 'oneshotcoding',
+  user: process.env.DB_USER || 'oneshotcoding',
+  password: process.env.DB_PASSWORD || 'oneshotcoding',
 });
 
 interface User {
@@ -21,7 +21,7 @@ interface User {
 const sampleUsers = [
   {
     github_id: 1001,
-    username: 'vibecoder_alice',
+    username: 'shotcoder_alice',
     display_name: 'Alice Chen',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
     bio: 'Full-stack developer | Coffee enthusiast | Building cool stuff',

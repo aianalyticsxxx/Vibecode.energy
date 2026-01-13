@@ -15,7 +15,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="px-6 py-6">
         <div className={`
           flex flex-col lg:flex-row gap-6
           ${sidebarPosition === 'left' ? 'lg:flex-row-reverse' : ''}

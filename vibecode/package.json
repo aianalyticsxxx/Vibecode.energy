@@ -1,21 +1,21 @@
 {
-  "name": "vibecode-energy",
+  "name": "oneshotcoding",
   "version": "1.0.0",
   "private": true,
-  "description": "VibeCode Energy - A social network for vibecoders around the world",
+  "description": "OneShotCoding - A social network for developers to share their daily builds",
   "keywords": [
     "social-network",
-    "vibecoding",
-    "energy",
+    "developers",
+    "coding",
     "typescript",
     "monorepo"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibecode/vibecode-energy.git"
+    "url": "https://github.com/oneshotcoding/oneshotcoding.git"
   },
   "license": "MIT",
-  "author": "VibeCode Energy Team",
+  "author": "OneShotCoding Team",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20"
@@ -23,9 +23,9 @@
   "scripts": {
     "build": "turbo build",
     "clean": "turbo clean && rm -rf node_modules",
-    "db:migrate": "pnpm --filter @vibecode/api migrate",
-    "db:seed": "pnpm --filter @vibecode/api seed",
-    "db:reset": "pnpm --filter @vibecode/api db:reset",
+    "db:migrate": "pnpm --filter @oneshotcoding/api migrate",
+    "db:seed": "pnpm --filter @oneshotcoding/api seed",
+    "db:reset": "pnpm --filter @oneshotcoding/api db:reset",
     "dev": "turbo dev",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",

@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('vibecode-theme') as Theme | null;
+    const stored = localStorage.getItem('oneshotcoding-theme') as Theme | null;
     if (stored && (stored === 'glass' || stored === 'neumorphic')) {
       setThemeState(stored);
     }
@@ -29,7 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     document.documentElement.classList.remove('theme-glass', 'theme-neumorphic');
     document.documentElement.classList.add(`theme-${theme}`);
-    localStorage.setItem('vibecode-theme', theme);
+    localStorage.setItem('oneshotcoding-theme', theme);
   }, [theme, mounted]);
 
   const setTheme = (newTheme: Theme) => setThemeState(newTheme);

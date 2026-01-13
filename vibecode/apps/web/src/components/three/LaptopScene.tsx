@@ -49,8 +49,8 @@ function SceneContent({ children }: { children?: React.ReactNode }) {
       <OrbitControls
         enablePan={false}
         enableZoom={true}
-        minDistance={5.5}
-        maxDistance={12}
+        minDistance={3}
+        maxDistance={15}
         minPolarAngle={Math.PI / 6}  // Don't go too far above
         maxPolarAngle={Math.PI / 2}   // Don't go below ground
         autoRotate

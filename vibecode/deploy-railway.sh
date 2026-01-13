@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# VibeCode Railway Deployment Script
-# ==================================
+# OneShotCoding Railway Deployment Script
+# =======================================
 
 set -e
 
-echo "🚀 VibeCode Railway Deployment"
-echo "=============================="
+echo "🚀 OneShotCoding Railway Deployment"
+echo "===================================="
 echo ""
 
 # Check if railway is installed
@@ -27,7 +27,7 @@ echo ""
 
 # Create new project
 echo "📦 Creating Railway project..."
-npx railway init --name vibecode
+npx railway init --name oneshotcoding
 
 echo ""
 echo "🗄️  Adding PostgreSQL database..."
@@ -56,8 +56,8 @@ echo "   API Service:"
 echo "   - JWT_SECRET: (generate with: openssl rand -base64 32)"
 echo "   - GITHUB_CLIENT_ID: your-github-client-id"
 echo "   - GITHUB_CLIENT_SECRET: your-github-client-secret"
-echo "   - GITHUB_CALLBACK_URL: https://your-api.railway.app/auth/github/callback"
-echo "   - FRONTEND_URL: https://your-web.railway.app"
+echo "   - GITHUB_CALLBACK_URL: https://oneshotcoding-production.up.railway.app/auth/github/callback"
+echo "   - FRONTEND_URL: https://oneshotcoding.vercel.app"
 echo "   - S3_ENDPOINT: https://s3.amazonaws.com"
 echo "   - S3_ACCESS_KEY: your-aws-access-key"
 echo "   - S3_SECRET_KEY: your-aws-secret-key"
@@ -65,8 +65,8 @@ echo "   - S3_BUCKET: your-bucket-name"
 echo "   - S3_REGION: us-east-1"
 echo ""
 echo "   Web Service:"
-echo "   - NEXT_PUBLIC_API_URL: https://your-api.railway.app"
-echo "   - NEXT_PUBLIC_AUTH_URL: https://your-api.railway.app"
+echo "   - NEXT_PUBLIC_API_URL: https://oneshotcoding-production.up.railway.app"
+echo "   - NEXT_PUBLIC_AUTH_URL: https://oneshotcoding-production.up.railway.app"
 echo ""
 
 echo "📚 Next steps:"
