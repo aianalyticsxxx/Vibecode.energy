@@ -13,13 +13,11 @@ export function StatsPanel({ username }: StatsPanelProps) {
   const streak = stats?.streak ?? 0;
   const totalPosts = stats?.totalPosts ?? 0;
   const totalSparkles = stats?.totalSparkles ?? 0;
-  const rank = stats?.rank;
 
   const statsList = [
     { label: 'streak', value: streak, suffix: streak > 0 ? ' days' : '', highlight: streak >= 7 },
     { label: 'posts', value: totalPosts, suffix: '' },
     { label: 'sparkles', value: totalSparkles, suffix: '' },
-    ...(rank ? [{ label: 'rank', value: rank, prefix: '#', suffix: '' }] : []),
   ];
 
   return (
@@ -64,7 +62,7 @@ export function StatsPanel({ username }: StatsPanelProps) {
             >
               <span className="text-terminal-text-dim">{stat.label}:</span>
               <span className={stat.highlight ? 'text-terminal-accent' : 'text-terminal-text'}>
-                {stat.prefix || ''}{stat.value.toLocaleString()}{stat.suffix}
+                {stat.value.toLocaleString()}{stat.suffix}
                 {stat.label === 'streak' && streak >= 7 && (
                   <span className="ml-1">
                     {streak >= 100 ? '💯' : streak >= 50 ? '🌟' : streak >= 30 ? '⭐' : streak >= 14 ? '💪' : '🔥'}
