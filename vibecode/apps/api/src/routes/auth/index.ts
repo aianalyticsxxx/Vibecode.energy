@@ -1,9 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { githubRoutes } from './github.js';
+import { twitterRoutes } from './twitter.js';
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // Register GitHub OAuth routes
   await fastify.register(githubRoutes);
+
+  // Register Twitter OAuth routes
+  await fastify.register(twitterRoutes);
 
   // POST /auth/logout - Clear cookies
   fastify.post('/logout', async (request, reply) => {
