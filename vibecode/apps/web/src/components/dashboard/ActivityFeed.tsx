@@ -107,7 +107,16 @@ export function ActivityFeed({ mode = 'following' }: ActivityFeedProps) {
                   @{item.actorUsername}
                 </Link>
                 <span className="text-terminal-text-secondary ml-1">
-                  {getActivityText(item, user?.username)}
+                  {item.type === 'shot' && item.shotId ? (
+                    <Link
+                      href={`/shot/${item.shotId}`}
+                      className="hover:text-terminal-accent transition-colors"
+                    >
+                      shipped a build
+                    </Link>
+                  ) : (
+                    getActivityText(item, user?.username)
+                  )}
                 </span>
               </div>
               <span className="text-terminal-text-dim text-xs flex-shrink-0">
