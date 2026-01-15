@@ -48,27 +48,11 @@ const nextConfig = {
         ? 'https://oneshotcoding-production.up.railway.app'
         : 'http://localhost:4000');
 
-    // Admin panel URL
-    const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ||
-      (process.env.NODE_ENV === 'production'
-        ? 'https://admin-payout-academy-analytics-projects.vercel.app'
-        : 'http://localhost:3002');
-
     return [
       {
         // Proxy all API routes except auth/me (handled by Next.js route)
         source: '/api/:path((?!auth/me).*)',
         destination: `${apiUrl}/:path*`,
-      },
-      {
-        // Proxy /crm to admin panel
-        source: '/crm',
-        destination: `${adminUrl}/crm`,
-      },
-      {
-        // Proxy /crm/* to admin panel
-        source: '/crm/:path*',
-        destination: `${adminUrl}/crm/:path*`,
       },
     ];
   },

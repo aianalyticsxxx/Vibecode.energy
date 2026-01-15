@@ -13,6 +13,24 @@ const config: Config = {
         mono: ['var(--font-mono)', 'JetBrains Mono', 'Fira Code', 'monospace'],
       },
       colors: {
+        // Admin panel palette
+        admin: {
+          bg: '#09090B',
+          'bg-elevated': '#0f0f10',
+          'bg-card': '#18181B',
+          'bg-hover': '#27272A',
+          border: '#27272A',
+          'border-bright': '#3F3F46',
+          text: '#FAFAFA',
+          'text-secondary': '#A1A1AA',
+          'text-dim': '#71717A',
+          accent: '#F59E0B',
+          'accent-hover': '#D97706',
+          success: '#22C55E',
+          error: '#EF4444',
+          info: '#3B82F6',
+          warning: '#F59E0B',
+        },
         // OneShotCoding terminal palette
         terminal: {
           bg: '#0D0D0D',
