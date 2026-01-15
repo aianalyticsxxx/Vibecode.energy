@@ -24,8 +24,12 @@ export default function AuthCallbackPage() {
       setToken(accessToken);
       localStorage.setItem('admin_refresh_token', refreshToken);
 
-      // Redirect to admin dashboard
-      router.replace('/');
+      // Redirect to admin dashboard using full page reload
+      // This ensures AuthProvider remounts and fetches user with the new token
+      // Detect basePath from current URL for production (/crm)
+      const pathname = window.location.pathname;
+      const basePath = pathname.startsWith('/crm') ? '/crm' : '';
+      window.location.href = `${basePath}/`;
     } else {
       router.replace('/login?error=missing_tokens');
     }
