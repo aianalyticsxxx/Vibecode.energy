@@ -32,7 +32,10 @@ function CallbackContent() {
       if (success === 'true' && accessToken) {
         // Store tokens received from OAuth callback
         try {
-          // Store tokens in cookies on the frontend domain
+          // Store access token in localStorage (used by API client)
+          localStorage.setItem('oneshotcoding_token', accessToken);
+
+          // Also store in cookies for cross-domain scenarios
           const isSecure = window.location.protocol === 'https:';
           document.cookie = `access_token=${accessToken}; path=/; max-age=${15 * 60}; samesite=lax${isSecure ? '; secure' : ''}`;
           if (refreshToken) {
