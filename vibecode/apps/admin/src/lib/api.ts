@@ -1,6 +1,7 @@
 import { getToken, setToken, clearAuth, type AdminUser } from './auth';
 
-const API_URL = '/api';
+// Use direct API URL to bypass Vercel's deployment protection on /api routes
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
