@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useFollow } from '@/hooks/useFollow';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +48,9 @@ export default function ProfilePage() {
   const error = userError;
 
   const isOwnProfile = currentUser?.username === username;
+
+  // Follow state - uses user.id when available
+  const { isFollowing, followerCount, followingCount, isToggling, toggleFollow } = useFollow(user?.id ?? '');
 
   if (isLoading) {
     return (
@@ -113,10 +117,18 @@ export default function ProfilePage() {
             )}
 
             {/* Stats */}
-            <div className="flex justify-center gap-8 py-4 border-y border-glass-border">
+            <div className="flex justify-center gap-6 py-4 border-y border-glass-border">
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">{shots.length}</p>
                 <p className="text-white/50 text-sm">Shots</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">{followerCount}</p>
+                <p className="text-white/50 text-sm">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">{followingCount}</p>
+                <p className="text-white/50 text-sm">Following</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">
@@ -127,16 +139,34 @@ export default function ProfilePage() {
             </div>
 
             {/* Actions */}
-            {isOwnProfile && (
-              <div className="mt-4 flex justify-center gap-3">
-                <Button variant="gradient" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                  Edit Profile
+            <div className="mt-4 flex justify-center gap-3">
+              {isOwnProfile ? (
+                <>
+                  <Button variant="gradient" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                    Edit Profile
+                  </Button>
+                  <Button variant="glass" size="sm" onClick={logout}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : currentUser && (
+                <Button
+                  variant={isFollowing ? 'glass' : 'gradient'}
+                  size="sm"
+                  onClick={toggleFollow}
+                  disabled={isToggling}
+                  className={isFollowing ? 'hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50' : ''}
+                >
+                  {isToggling ? (
+                    <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isFollowing ? (
+                    'Following'
+                  ) : (
+                    'Follow'
+                  )}
                 </Button>
-                <Button variant="glass" size="sm" onClick={logout}>
-                  Sign Out
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </GlassPanel>
         </motion.div>
 
