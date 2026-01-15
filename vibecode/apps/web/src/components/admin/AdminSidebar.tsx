@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useAdminAuth } from '@/contexts/admin/AdminAuthContext';
 
 const navItems = [
-  { href: '/crm', label: 'Dashboard', icon: DashboardIcon },
-  { href: '/crm/users', label: 'Users', icon: UsersIcon },
-  { href: '/crm/moderation', label: 'Moderation', icon: ShieldIcon },
-  { href: '/crm/challenges', label: 'Challenges', icon: TrophyIcon },
-  { href: '/crm/content', label: 'Content', icon: GridIcon },
-  { href: '/crm/analytics', label: 'Analytics', icon: ChartIcon },
+  { href: '/admin-panel', label: 'Dashboard', icon: DashboardIcon },
+  { href: '/admin-panel/users', label: 'Users', icon: UsersIcon },
+  { href: '/admin-panel/moderation', label: 'Moderation', icon: ShieldIcon },
+  { href: '/admin-panel/challenges', label: 'Challenges', icon: TrophyIcon },
+  { href: '/admin-panel/content', label: 'Content', icon: GridIcon },
+  { href: '/admin-panel/analytics', label: 'Analytics', icon: ChartIcon },
 ];
 
 export function AdminSidebar() {
@@ -21,7 +21,7 @@ export function AdminSidebar() {
     <aside className="w-64 bg-[#0f0f10] border-r border-neutral-800 flex flex-col h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-neutral-800">
-        <Link href="/crm" className="flex items-center gap-2">
+        <Link href="/admin-panel" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
             <span className="text-white font-bold text-sm">OS</span>
           </div>
@@ -33,7 +33,7 @@ export function AdminSidebar() {
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
-            (item.href !== '/crm' && pathname.startsWith(item.href));
+            (item.href !== '/admin-panel' && pathname.startsWith(item.href));
           const Icon = item.icon;
 
           return (

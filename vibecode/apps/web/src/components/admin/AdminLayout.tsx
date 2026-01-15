@@ -55,7 +55,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               onClick={() => window.location.href = '/'}
               className="w-full px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
             >
-              Go to OneShotCoding
+              Go to Home
             </button>
           </div>
         </div>
