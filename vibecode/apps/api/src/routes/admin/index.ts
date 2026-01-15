@@ -317,6 +317,47 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { challenges, nextCursor: null, hasMore };
   });
 
+  // GET /admin/challenges/:id - Get single challenge
+  fastify.get<{ Params: { id: string } }>('/challenges/:id', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const result = await fastify.db.query(`
+      SELECT
+        c.*,
+        (SELECT COUNT(*) FROM shots s WHERE s.challenge_id = c.id)::int as submission_count,
+        CASE
+          WHEN NOW() < c.starts_at THEN 'upcoming'
+          WHEN NOW() BETWEEN c.starts_at AND c.ends_at THEN 'active'
+          WHEN c.voting_ends_at IS NOT NULL AND NOW() BETWEEN c.ends_at AND c.voting_ends_at THEN 'voting'
+          ELSE 'completed'
+        END as status
+      FROM challenges c
+      WHERE c.id = $1
+    `, [request.params.id]);
+
+    if (result.rows.length === 0) {
+      return reply.status(404).send({ error: 'Challenge not found' });
+    }
+
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      createdBy: row.created_by,
+      isOfficial: row.is_official,
+      isSponsored: row.is_sponsored,
+      sponsorName: row.sponsor_name,
+      prizeDescription: row.prize_description,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      votingEndsAt: row.voting_ends_at,
+      createdAt: row.created_at,
+      status: row.status,
+      submissionCount: row.submission_count,
+    };
+  });
+
   // POST /admin/challenges - Create challenge
   fastify.post<{
     Body: {

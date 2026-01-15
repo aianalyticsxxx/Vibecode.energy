@@ -1,5 +1,50 @@
 // Admin API - uses the same API as the main app
 const API_URL = '/api';
+const TOKEN_KEY = 'oneshotcoding_token';
+
+// Track if we're currently refreshing to prevent multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Attempt to refresh the access token using the refresh token cookie
+ */
+async function refreshAccessToken(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        localStorage.removeItem(TOKEN_KEY);
+        return false;
+      }
+
+      const data = await response.json();
+      if (data.accessToken) {
+        localStorage.setItem(TOKEN_KEY, data.accessToken);
+        return true;
+      }
+      return false;
+    } catch {
+      localStorage.removeItem(TOKEN_KEY);
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
 
 export interface AdminUser {
   id: string;
@@ -21,9 +66,10 @@ export interface ApiResponse<T> {
 
 async function fetchApi<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry = false
 ): Promise<ApiResponse<T>> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('oneshotcoding_token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
 
   const headers: HeadersInit = {
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -40,6 +86,14 @@ async function fetchApi<T>(
       headers,
       credentials: 'include',
     });
+
+    // Handle 401 - try to refresh token and retry once
+    if (response.status === 401 && !isRetry) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return fetchApi<T>(endpoint, options, true);
+      }
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

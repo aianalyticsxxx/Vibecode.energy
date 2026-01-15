@@ -90,6 +90,27 @@ export const reportRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
+  // GET /reports/:id - Get single report (admin only)
+  fastify.get<{ Params: ReportParams }>('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
+    const { userId } = request.user;
+    const { id } = request.params;
+
+    // Check admin access
+    const isAdmin = await reportService.isAdmin(userId);
+    if (!isAdmin) {
+      return reply.status(403).send({ error: 'Admin access required' });
+    }
+
+    const report = await reportService.getById(id);
+    if (!report) {
+      return reply.status(404).send({ error: 'Report not found' });
+    }
+
+    return report;
+  });
+
   // PATCH /reports/:id - Update report status (admin only)
   fastify.patch<{ Params: ReportParams; Body: UpdateReportBody }>('/:id', {
     preHandler: [fastify.authenticate],
