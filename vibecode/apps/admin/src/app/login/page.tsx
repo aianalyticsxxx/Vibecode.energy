@@ -19,7 +19,11 @@ export default function LoginPage() {
   const handleLogin = () => {
     // Redirect to main app's GitHub OAuth
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    window.location.href = `${apiUrl}/auth/github?redirect=${encodeURIComponent(window.location.origin)}`;
+    // Detect basePath from current URL (if we're at /crm/login, basePath is /crm)
+    const pathname = window.location.pathname;
+    const basePath = pathname.startsWith('/crm') ? '/crm' : '';
+    const redirectUrl = `${window.location.origin}${basePath}`;
+    window.location.href = `${apiUrl}/auth/github?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
   if (isLoading) {
