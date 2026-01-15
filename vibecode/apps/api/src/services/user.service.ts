@@ -147,7 +147,6 @@ export class UserService {
           display_name = $2,
           avatar_url = NULL,
           bio = NULL,
-          github_id = -ABS(github_id), -- Negate to mark as deleted but keep unique
           deleted_at = $3,
           deletion_scheduled_at = $4,
           updated_at = NOW()

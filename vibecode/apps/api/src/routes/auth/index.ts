@@ -39,7 +39,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     const { userId } = request.user;
 
     const result = await fastify.db.query(
-      `SELECT id, github_id, username, display_name, avatar_url, bio, created_at, updated_at
+      `SELECT id, username, display_name, avatar_url, bio, created_at, updated_at
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -52,7 +52,6 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     return {
       user: {
         id: user.id,
-        githubId: user.github_id,
         username: user.username,
         displayName: user.display_name,
         avatarUrl: user.avatar_url,
