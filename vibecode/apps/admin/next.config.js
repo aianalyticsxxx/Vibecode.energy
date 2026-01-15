@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Required for Docker/Railway deployment
+  output: 'standalone',
+  // For production deployment at /crm path
+  basePath: process.env.NODE_ENV === 'production' ? '/crm' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/crm' : '',
   images: {
     remotePatterns: [
       {
@@ -42,33 +45,15 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    // Use Railway API for production, localhost for development
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://oneshotcoding-production.up.railway.app'
         : 'http://localhost:4000');
-
-    // Admin panel URL
-    const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ||
-      (process.env.NODE_ENV === 'production'
-        ? 'https://admin-payout-academy-analytics-projects.vercel.app'
-        : 'http://localhost:3002');
-
     return [
       {
-        // Proxy all API routes except auth/me (handled by Next.js route)
-        source: '/api/:path((?!auth/me).*)',
+        source: '/api/:path*',
         destination: `${apiUrl}/:path*`,
-      },
-      {
-        // Proxy /crm to admin panel
-        source: '/crm',
-        destination: `${adminUrl}/crm`,
-      },
-      {
-        // Proxy /crm/* to admin panel
-        source: '/crm/:path*',
-        destination: `${adminUrl}/crm/:path*`,
       },
     ];
   },

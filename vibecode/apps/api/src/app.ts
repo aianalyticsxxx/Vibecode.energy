@@ -22,6 +22,7 @@ import { challengeRoutes } from './routes/challenges/index.js';
 import { tagRoutes } from './routes/tags/index.js';
 import { activityRoutes } from './routes/activity/index.js';
 import { reportRoutes } from './routes/reports/index.js';
+import { adminRoutes } from './routes/admin/index.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   // Validate required environment variables
@@ -42,6 +43,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:3002', // Admin panel
+    'http://127.0.0.1:3002', // Admin panel
   ].filter(Boolean);
 
   await app.register(fastifyCors, {
@@ -118,6 +121,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(tagRoutes, { prefix: '/tags' });
   await app.register(activityRoutes, { prefix: '/activity' });
   await app.register(reportRoutes, { prefix: '/reports' });
+  await app.register(adminRoutes, { prefix: '/admin' });
 
   // Health check endpoint
   app.get('/health', async () => {

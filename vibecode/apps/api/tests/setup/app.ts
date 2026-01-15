@@ -23,6 +23,7 @@ import { challengeRoutes } from '../../src/routes/challenges/index.js';
 import { tagRoutes } from '../../src/routes/tags/index.js';
 import { activityRoutes } from '../../src/routes/activity/index.js';
 import { reportRoutes } from '../../src/routes/reports/index.js';
+import { adminRoutes } from '../../src/routes/admin/index.js';
 
 // ============================================================================
 // Mock S3 Client
@@ -124,6 +125,7 @@ export async function buildTestApp(options: BuildTestAppOptions = {}): Promise<F
     await app.register(tagRoutes, { prefix: '/tags' });
     await app.register(activityRoutes, { prefix: '/activity' });
     await app.register(reportRoutes, { prefix: '/reports' });
+    await app.register(adminRoutes, { prefix: '/admin' });
 
     // Health check endpoint
     app.get('/health', async () => {
