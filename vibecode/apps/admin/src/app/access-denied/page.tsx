@@ -1,10 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-
 export default function AccessDeniedPage() {
-  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-admin-bg p-4">
@@ -39,17 +35,11 @@ export default function AccessDeniedPage() {
           {/* Actions */}
           <div className="space-y-3">
             <button
-              onClick={logout}
-              className="w-full px-4 py-2.5 bg-admin-bg-card border border-admin-border rounded-lg text-admin-text font-medium hover:bg-admin-bg-hover transition-colors"
+              onClick={() => window.location.href = 'https://oneshotcoding.io'}
+              className="w-full px-4 py-2.5 bg-admin-accent text-white rounded-lg font-medium hover:bg-admin-accent-hover transition-colors"
             >
-              Sign Out
+              Go to OneShotCoding
             </button>
-            <Link
-              href="/"
-              className="block text-sm text-admin-text-secondary hover:text-admin-text"
-            >
-              Go to main site
-            </Link>
           </div>
         </div>
       </div>
