@@ -104,6 +104,53 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { success: true };
   });
 
+  // POST /admin/users/:id/unban - Unban user
+  fastify.post<{ Params: { id: string } }>('/users/:id/unban', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const result = await fastify.db.query(
+      'UPDATE users SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING id',
+      [request.params.id]
+    );
+    if (result.rows.length === 0) {
+      return reply.status(404).send({ error: 'User not found or not banned' });
+    }
+    await adminService.logAction(
+      request.user.userId,
+      'user_unbanned',
+      'user',
+      request.params.id,
+      {}
+    );
+    return { success: true };
+  });
+
+  // POST /admin/shots/:id/hide - Manually hide a shot
+  fastify.post<{
+    Params: { id: string };
+    Body: { reason?: string };
+  }>('/shots/:id/hide', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const result = await fastify.db.query(
+      `UPDATE shots
+       SET is_hidden = TRUE, hidden_at = NOW(), hidden_reason = $1, moderation_status = 'rejected'
+       WHERE id = $2 RETURNING id`,
+      [request.body.reason || 'Hidden by admin', request.params.id]
+    );
+    if (result.rows.length === 0) {
+      return reply.status(404).send({ error: 'Shot not found' });
+    }
+    await adminService.logAction(
+      request.user.userId,
+      'shot_hidden',
+      'shot',
+      request.params.id,
+      { reason: request.body.reason }
+    );
+    return { success: true };
+  });
+
   // DELETE /admin/users/:id - Delete user
   fastify.delete<{ Params: { id: string } }>('/users/:id', {
     preHandler: [fastify.authenticate, requireAdmin],
