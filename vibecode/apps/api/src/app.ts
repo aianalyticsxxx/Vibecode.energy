@@ -9,6 +9,7 @@ import fastifyRateLimit from '@fastify/rate-limit';
 import { dbPlugin } from './plugins/db.js';
 import { authPlugin } from './plugins/auth.js';
 import { s3Plugin } from './plugins/s3.js';
+import { banCheckPlugin } from './plugins/banCheck.js';
 
 import { authRoutes } from './routes/auth/index.js';
 import { shotRoutes } from './routes/shots/index.js';
@@ -106,6 +107,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register custom plugins
   await app.register(dbPlugin);
   await app.register(authPlugin);
+  await app.register(banCheckPlugin);
   await app.register(s3Plugin);
 
   // Register routes

@@ -239,6 +239,63 @@ export interface AdminAuditLogEntry {
   createdAt: string;
 }
 
+// AI Moderation types
+export interface ModerationResult {
+  id: string;
+  shotId: string;
+  isSafe: boolean;
+  overallConfidence: number;
+  nsfwScore: number;
+  violenceScore: number;
+  hateScore: number;
+  harassmentScore: number;
+  selfHarmScore: number;
+  drugsScore: number;
+  illegalScore: number;
+  reasoning: string | null;
+  modelVersion: string | null;
+  processingTimeMs: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface ModerationQueueItem {
+  id: string;
+  shotId: string;
+  moderationResultId: string | null;
+  priority: number;
+  status: 'pending' | 'in_review' | 'completed' | 'escalated';
+  triggerCategory: string;
+  triggerConfidence: number;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewDecision: string | null;
+  reviewNotes: string | null;
+  createdAt: string;
+  shot?: {
+    id: string;
+    imageUrl: string;
+    prompt: string;
+    caption: string | null;
+    createdAt: string;
+  };
+  user?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  moderationResult?: ModerationResult;
+}
+
+export interface ModerationQueueStats {
+  pending: number;
+  inReview: number;
+  todayProcessed: number;
+  autoRejected24h: number;
+  autoApproved24h: number;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   activeToday: number;
@@ -418,4 +475,31 @@ export const adminApi = {
       `/admin/audit-log${query ? `?${query}` : ''}`
     );
   },
+
+  // AI Moderation Queue
+  getModerationQueue: (params?: { status?: string; cursor?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.cursor) searchParams.set('cursor', params.cursor);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    return get<{ items: ModerationQueueItem[]; nextCursor: string | null; hasMore: boolean }>(
+      `/admin/moderation/queue${query ? `?${query}` : ''}`
+    );
+  },
+
+  getModerationQueueItem: (id: string) =>
+    get<ModerationQueueItem>(`/admin/moderation/queue/${id}`),
+
+  reviewModerationItem: (id: string, data: {
+    decision: 'approve' | 'reject' | 'reject_and_ban' | 'escalate';
+    notes?: string;
+  }) => post<{ success: boolean }>(`/admin/moderation/queue/${id}/review`, data),
+
+  getModerationStats: () => get<ModerationQueueStats>('/admin/moderation/stats'),
+
+  reanalyzeShot: (shotId: string) =>
+    post<{ action: string; shotId: string; reason?: string; queueId?: string }>(
+      `/admin/moderation/reanalyze/${shotId}`
+    ),
 };

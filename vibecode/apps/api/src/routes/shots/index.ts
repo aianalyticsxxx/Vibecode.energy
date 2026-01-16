@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { ShotService } from '../../services/shot.service.js';
 import { UploadService } from '../../services/upload.service.js';
 import { TagService } from '../../services/tag.service.js';
+import { ModerationService } from '../../services/moderation.service.js';
 
 interface CreateShotBody {
   prompt: string;
@@ -38,6 +39,7 @@ export const shotRoutes: FastifyPluginAsync = async (fastify) => {
   const shotService = new ShotService(fastify);
   const uploadService = new UploadService(fastify);
   const tagService = new TagService(fastify);
+  const moderationService = new ModerationService(fastify);
 
   // GET /shots - Chronological feed with cursor pagination (Explore tab)
   fastify.get<{ Querystring: DiscoveryQuery }>('/', {
@@ -90,7 +92,7 @@ export const shotRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /shots - Create a new shot (no daily limit!)
   fastify.post('/', {
-    preHandler: [fastify.authenticate],
+    preHandler: [fastify.authenticate, fastify.requireNotBanned],
   }, async (request, reply) => {
     const { userId } = request.user;
 
@@ -229,6 +231,17 @@ export const shotRoutes: FastifyPluginAsync = async (fastify) => {
       const uniqueHashtags = [...new Set(hashtags)];
       if (uniqueHashtags.length > 0) {
         await tagService.attachTagsToShot(shot.id, uniqueHashtags);
+      }
+
+      // Trigger async content moderation (don't block the response)
+      if (shot.imageUrl && (resultType === 'image' || resultType === 'video')) {
+        setImmediate(async () => {
+          try {
+            await moderationService.analyzeContent(shot.id, shot.imageUrl);
+          } catch (err) {
+            fastify.log.error({ err, shotId: shot.id }, 'Content moderation failed');
+          }
+        });
       }
 
       return reply.status(201).send(shot);

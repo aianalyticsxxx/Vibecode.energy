@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { AdminService } from '../../services/admin.service.js';
+import { ModerationService } from '../../services/moderation.service.js';
+import { ShotService } from '../../services/shot.service.js';
 
 interface AdminAuthPreHandler {
   preHandler: [(request: { user: { userId: string } }, reply: unknown) => Promise<void>];
@@ -7,6 +9,8 @@ interface AdminAuthPreHandler {
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   const adminService = new AdminService(fastify);
+  const moderationService = new ModerationService(fastify);
+  const shotService = new ShotService(fastify);
 
   // Middleware to check admin status
   const requireAdmin = async (request: { user: { userId: string } }, reply: { status: (code: number) => { send: (data: { error: string }) => void } }) => {
@@ -511,6 +515,99 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
       : new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     return adminService.getAnalytics(startDate, endDate);
+  });
+
+  // ============ AI MODERATION QUEUE ============
+
+  // GET /admin/moderation/queue - List moderation queue items
+  fastify.get<{
+    Querystring: {
+      status?: string;
+      cursor?: string;
+      limit?: string;
+    };
+  }>('/moderation/queue', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request) => {
+    const { status, cursor, limit } = request.query;
+    return moderationService.getQueueItems(
+      status,
+      limit ? parseInt(limit, 10) : 20,
+      cursor
+    );
+  });
+
+  // GET /admin/moderation/queue/:id - Get single queue item
+  fastify.get<{ Params: { id: string } }>('/moderation/queue/:id', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const item = await moderationService.getQueueItemById(request.params.id);
+    if (!item) {
+      return reply.status(404).send({ error: 'Queue item not found' });
+    }
+    return item;
+  });
+
+  // POST /admin/moderation/queue/:id/review - Process queue item review
+  fastify.post<{
+    Params: { id: string };
+    Body: {
+      decision: 'approve' | 'reject' | 'reject_and_ban' | 'escalate';
+      notes?: string;
+    };
+  }>('/moderation/queue/:id/review', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const { decision, notes } = request.body;
+
+    if (!['approve', 'reject', 'reject_and_ban', 'escalate'].includes(decision)) {
+      return reply.status(400).send({ error: 'Invalid decision' });
+    }
+
+    try {
+      await moderationService.processQueueItem(
+        request.params.id,
+        decision,
+        request.user.userId,
+        notes
+      );
+      return { success: true };
+    } catch (err) {
+      const error = err as Error;
+      if (error.message === 'Queue item not found') {
+        return reply.status(404).send({ error: 'Queue item not found' });
+      }
+      throw err;
+    }
+  });
+
+  // GET /admin/moderation/stats - Get moderation statistics
+  fastify.get('/moderation/stats', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async () => {
+    return moderationService.getQueueStats();
+  });
+
+  // POST /admin/moderation/reanalyze/:shotId - Re-run AI analysis on a shot
+  fastify.post<{ Params: { shotId: string } }>('/moderation/reanalyze/:shotId', {
+    preHandler: [fastify.authenticate, requireAdmin],
+  }, async (request, reply) => {
+    const shot = await shotService.getById(request.params.shotId);
+    if (!shot) {
+      return reply.status(404).send({ error: 'Shot not found' });
+    }
+
+    const result = await moderationService.analyzeContent(shot.id, shot.imageUrl);
+
+    await adminService.logAction(
+      request.user.userId,
+      'content_reanalyzed',
+      'shot',
+      shot.id,
+      { result }
+    );
+
+    return result;
   });
 
   // ============ AUDIT LOG ============
