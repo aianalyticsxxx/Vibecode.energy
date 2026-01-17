@@ -60,7 +60,7 @@ export default function CapturePage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-8 md:pt-12">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
