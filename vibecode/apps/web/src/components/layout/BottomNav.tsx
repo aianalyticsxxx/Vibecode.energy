@@ -12,7 +12,7 @@ export interface BottomNavProps {
 
 const navItems = [
   {
-    href: '/feed/discover',
+    href: '/feed/explore',
     label: 'feed',
     icon: (active: boolean) => (
       <svg
@@ -112,7 +112,7 @@ export function BottomNav({ className }: BottomNavProps) {
     if (href === '/challenges') {
       return pathname.startsWith('/challenges');
     }
-    if (href === '/feed/discover') {
+    if (href === '/feed/explore') {
       return pathname.startsWith('/feed');
     }
     return pathname === href;

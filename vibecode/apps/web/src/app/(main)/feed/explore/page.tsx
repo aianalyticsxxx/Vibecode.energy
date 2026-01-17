@@ -12,7 +12,7 @@ import { useDiscoveryFeed } from '@/hooks/useDiscoveryFeed';
 
 type SortOption = 'recent' | 'popular';
 
-export default function DiscoverFeedPage() {
+export default function ExploreFeedPage() {
   const { user } = useAuth();
   const [sort, setSort] = useState<SortOption>('recent');
   const { vibes, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
@@ -20,7 +20,6 @@ export default function DiscoverFeedPage() {
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Infinite scroll observer
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
@@ -66,15 +65,15 @@ export default function DiscoverFeedPage() {
           >
             <div className="flex items-center gap-2 font-mono text-terminal-text-dim text-xs">
               <span className="text-terminal-accent">$</span>
-              <span>cd ~/feed/discover</span>
+              <span>cd ~/feed/explore</span>
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-semibold text-terminal-text font-mono">
-                  <span className="text-terminal-accent">&#62;</span> Discover
+                  <span className="text-terminal-accent">&#62;</span> Explore
                 </h1>
                 <p className="text-sm text-terminal-text-secondary font-mono">
-                  // explore shots from all coders
+                  // all shots from the community
                 </p>
               </div>
 
