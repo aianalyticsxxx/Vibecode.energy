@@ -17,19 +17,57 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'OneShotCoding - Ship Your Daily Build',
-  description: 'A social network for developers. Share your daily build with the community in one shot.',
-  keywords: ['oneshotcoding', 'coding', 'social', 'builds', 'developers', 'community'],
+  metadataBase: new URL('https://oneshotcoding.io'),
+  title: {
+    default: 'OneShotCoding - Daily Coding Challenges with Rewards',
+    template: '%s | OneShotCoding',
+  },
+  description:
+    'A platform for the coding community to learn and teach others through daily challenges with rewards. One prompt. One response. Ship it.',
+  keywords: [
+    'oneshotcoding',
+    'coding challenges',
+    'ai coding',
+    'vibecoding',
+    'prompt engineering',
+    'developer community',
+    'coding competition',
+    'learn to code',
+    'ai prompts',
+    'daily challenges',
+  ],
   authors: [{ name: 'OneShotCoding Team' }],
+  creator: 'OneShotCoding',
+  publisher: 'OneShotCoding',
   openGraph: {
-    title: 'OneShotCoding - Ship Your Daily Build',
-    description: 'A social network for developers. Share your daily build with the community in one shot.',
+    title: 'OneShotCoding - Daily Coding Challenges with Rewards',
+    description:
+      'A platform for the coding community to learn and teach others through daily challenges with rewards. One prompt. One response. Ship it.',
+    url: 'https://oneshotcoding.io',
+    siteName: 'OneShotCoding',
+    locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OneShotCoding - Ship Your Daily Build',
-    description: 'A social network for developers. Share your daily build with the community in one shot.',
+    title: 'OneShotCoding - Daily Coding Challenges with Rewards',
+    description:
+      'A platform for the coding community to learn and teach others through daily challenges with rewards.',
+    creator: '@oneshotcoding',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
   },
 };
 
